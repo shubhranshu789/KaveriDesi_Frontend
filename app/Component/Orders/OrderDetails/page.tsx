@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Package, Truck, MapPin, Calendar, CreditCard } from 'lucide-react';
 
@@ -33,7 +33,7 @@ interface OrderDetails {
   };
 }
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -198,5 +198,14 @@ export default function OrderConfirmationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading checkout...</div>}>
+      <OrderConfirmationPage />
+    </Suspense>
   );
 }

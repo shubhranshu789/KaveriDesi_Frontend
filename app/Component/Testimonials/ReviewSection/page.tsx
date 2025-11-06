@@ -1,7 +1,7 @@
 // Component/ReviewSection.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,7 +27,7 @@ interface User {
   email: string;
 }
 
-export default function ReviewSection() {
+function ReviewSection() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pid = searchParams.get('id');
@@ -560,5 +560,14 @@ export default function ReviewSection() {
         </AnimatePresence>
       </motion.div>
     </div>
+  );
+}
+
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading checkout...</div>}>
+      <ReviewSection />
+    </Suspense>
   );
 }
