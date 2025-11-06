@@ -131,7 +131,7 @@ export default function Navbar() {
             </motion.button>
 
             {/* Dashboard */}
-            <motion.button
+            {/* <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={gotoDashBoard}
@@ -139,7 +139,7 @@ export default function Navbar() {
             >
               <Package className="w-4 h-4" />
               <span>dashBoard</span>
-            </motion.button>
+            </motion.button> */}
 
             {/* Wishlist */}
             <motion.button

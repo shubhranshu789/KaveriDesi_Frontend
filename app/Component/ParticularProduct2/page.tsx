@@ -117,51 +117,99 @@ function ProductContent() {
 
 
 
+  // const handleAddToCart = async () => {
+  //   setLoading(true);
+
+  //   try {
+  //     const userString = localStorage.getItem('user');
+
+  //     if (!userString) {
+  //       alert('Please login to add items to cart');
+  //       return;
+  //     }
+
+  //     const user = JSON.parse(userString);
+  //     const userId = user._id;
+
+  //     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/addtocart`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         userId: userId,
+  //         productId: pid,
+  //         image: image12,
+  //         title: `${title} - ${getQuantityLabel(selectedPages)}`,
+  //         price: finalPrice,
+  //       })
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (data.success) {
+  //       console.log('Added to cart successfully');
+  //       alert('Item added to cart!');
+  //     } else {
+  //       console.error('Failed to add to cart:', data.message);
+  //       alert('Failed to add item to cart');
+  //     }
+
+  //   } catch (error) {
+  //     console.error('Error adding to cart:', error);
+  //     alert('An error occurred. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleAddToCart = async () => {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const userString = localStorage.getItem('user');
+  try {
+    const userString = localStorage.getItem('user');
 
-      if (!userString) {
-        alert('Please login to add items to cart');
-        return;
-      }
-
-      const user = JSON.parse(userString);
-      const userId = user._id;
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/addtocart`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: userId,
-          productId: pid,
-          image: image12,
-          title: `${title} - ${getQuantityLabel(selectedPages)}`,
-          price: finalPrice,
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        console.log('Added to cart successfully');
-        alert('Item added to cart!');
-      } else {
-        console.error('Failed to add to cart:', data.message);
-        alert('Failed to add item to cart');
-      }
-
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+    if (!userString) {
+      alert('Please login to add items to cart');
+      return;
     }
-  };
+
+    const user = JSON.parse(userString);
+    const userId = user._id;
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/addtocart`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: userId,
+        productId: pid,
+        image: image12,
+        title: `${title} - ${getQuantityLabel(selectedPages)}`,
+        price: finalPrice,
+        quantityType: selectedPages,  // Add this: 50, 100, or 200
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log('Added to cart successfully');
+      alert('Item added to cart!');
+    } else {
+      console.error('Failed to add to cart:', data.message);
+      alert('Failed to add item to cart');
+    }
+
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    alert('An error occurred. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleWishlist = () => {
     setIsWishlisted(!isWishlisted);

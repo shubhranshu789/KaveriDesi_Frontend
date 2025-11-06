@@ -2,15 +2,43 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import Footer from '../app/Component/Footer/page'
+
+// import "../public/Images/logo.png"
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'Kaveri Desi - Fresh Milk Delivery',
+  description: 'Order fresh, pure milk delivered to your doorstep. Experience authentic dairy excellence with Kaveri Desi.',
+  generator: 'Shubh',
+  icons: {
+    icon: '/Images/logo.png',
+  },
+  openGraph: {
+    title: 'Kaveri Desi - Fresh Milk Delivery',
+    description: 'Order fresh, pure milk delivered to your doorstep. Experience authentic dairy excellence with Kaveri Desi.',
+    // url: 'https://kaveridesi.com',
+    siteName: 'Kaveri Desi',
+    images: [
+      {
+        url: '/Images/logo.png',
+        width: 1200,
+        height: 1200,
+        alt: 'Kaveri Desi Logo',
+      }
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kaveri Desi - Fresh Milk Delivery',
+    description: 'Order fresh, pure milk delivered to your doorstep.',
+    images: ['/Images/logo.png'],
+  },
 }
+
 
 export default function RootLayout({
   children,
@@ -22,6 +50,8 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         {children}
         <Analytics />
+
+        <Footer/>
       </body>
     </html>
   )
