@@ -26,6 +26,9 @@ export default function DairyPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+
+
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -49,7 +52,7 @@ export default function DairyPage() {
   const router = useRouter();
   const products = [
     {
-      id: 'p1',
+      id: 'milk',
       name: 'Fresh Milk',
       description: 'Pure and creamy farm-fresh milk, packed with essential nutrients and calcium for your daily health. Perfect for your morning coffee or cereal.',
       image: '/Products/milk.jpg',
@@ -58,7 +61,7 @@ export default function DairyPage() {
       price: '499 Rs'
     },
     {
-      id: 'p2',
+      id: 'ghee',
       name: 'Ghee',
       description: 'Handcrafted premium cheese aged to perfection, delivering rich flavors in every bite. Made from the finest dairy ingredients.',
       image: '/Products/ghee.jpg',
@@ -67,7 +70,7 @@ export default function DairyPage() {
       price: '199 Rs'
     },
     {
-      id: 'p3',
+      id: 'jag',
       name: 'Jagrery',
       description: 'Smooth and delicious probiotic yogurt, perfect for a healthy breakfast or snack any time. Rich in beneficial cultures.',
       image: '/Products/jagry.jpg',
@@ -91,93 +94,107 @@ export default function DairyPage() {
   };
 
 
+  const gotoParticularProductKg = (product: { id: any; image: any; image2: any; name: any; price: any; description: any; }) => {
+    const query = new URLSearchParams({
+      id: product.id,
+      image: product.image,
+      image2: product.image2,
+      title: product.name,
+      price: product.price,
+      description: product.description
+    }).toString();
+
+    router.push(`/Component/ParticularProductKg?${query}`);
+  };
+
+
   return (
     <div>
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         {/* Hero Section with Video */}
-           <section className="relative h-screen flex items-center justify-center overflow-hidden group">
-             {/* Background Video with Parallax */}
-             <motion.div
-               className="absolute inset-0 w-full h-full"
-               initial={{ scale: 1 }}
-               whileHover={{ scale: 1.05 }}
-               transition={{ duration: 0.6 }}
-             >
-               <video
-                 autoPlay
-                 loop
-                 muted
-                 playsInline
-                 className="w-full h-full object-cover"
-               >
-                 <source src="/Vdos/hero.mp4" type="video/mp4" />
-               </video>
-       
-               {/* Animated Overlay */}
-               <motion.div
-                 className="absolute inset-0 bg-black/40"
-                 initial={{ opacity: 0.4 }}
-                 whileHover={{ opacity: 0.5 }}
-                 transition={{ duration: 0.3 }}
-               />
-       
-               {/* Gradient Overlay */}
-               <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
-             </motion.div>
-       
-             {/* Hero Content */}
-             <motion.div
-               className="container relative z-10 text-center px-4 max-w-5xl"
-               variants={containerVariants}
-               initial="hidden"
-               animate="visible"
-             >
-               {/* Badge */}
-               <motion.div
-                 variants={itemVariants}
-                 className="inline-block mb-6 px-6 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white text-sm font-semibold hover:bg-white/30 transition-all cursor-pointer"
-               >
-                 ✨ Welcome to Kaveri Desi
-               </motion.div>
-       
-               {/* Main Heading */}
-               <motion.h1
-                 variants={itemVariants}
-                 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 tracking-tight drop-shadow-2xl leading-tight"
-               >
-                 <span className="bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
-                   Pure Dairy Goodness
-                 </span>
-               </motion.h1>
-       
-               {/* Subtitle */}
-               <motion.p
-                 variants={itemVariants}
-                 className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow-lg leading-relaxed"
-               >
-                 Farm fresh quality delivered to your door. Experience authentic dairy excellence with every glass.
-               </motion.p>
-       
-               {/* CTA Buttons */}
-               <motion.div
-                 variants={itemVariants}
-                 className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
-               >
-                 <motion.div
-                   whileHover={{ scale: 1.05 }}
-                   whileTap={{ scale: 0.95 }}
-                 >
-                   <Button
-                     onClick={() => router.push('/')}
-                     size="lg"
-                     className="text-lg px-8 py-6 rounded-full bg-gradient-to-r from-amber-200 to-amber-100 text-red-900 hover:from-white hover:to-amber-50 font-bold shadow-lg hover:shadow-xl transition-all"
-                   >
-                     Explore Products
-                   </Button>
-                 </motion.div>
-       
-                 {/* <motion.div
+        <section className="relative h-screen flex items-center justify-center overflow-hidden group">
+          {/* Background Video with Parallax */}
+          <motion.div
+            className="absolute inset-0 w-full h-full"
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.6 }}
+          >
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            >
+              <source src="/Vdos/hero.mp4" type="video/mp4" />
+            </video>
+
+            {/* Animated Overlay */}
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0.4 }}
+              whileHover={{ opacity: 0.5 }}
+              transition={{ duration: 0.3 }}
+            />
+
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+          </motion.div>
+
+          {/* Hero Content */}
+          <motion.div
+            className="container relative z-10 text-center px-4 max-w-5xl"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {/* Badge */}
+            <motion.div
+              variants={itemVariants}
+              className="inline-block mb-6 px-6 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white text-sm font-semibold hover:bg-white/30 transition-all cursor-pointer"
+            >
+              ✨ Welcome to Kaveri Desi
+            </motion.div>
+
+            {/* Main Heading */}
+            <motion.h1
+              variants={itemVariants}
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 tracking-tight drop-shadow-2xl leading-tight"
+            >
+              <span className="bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
+                Pure Dairy Goodness
+              </span>
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              variants={itemVariants}
+              className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow-lg leading-relaxed"
+            >
+              Farm fresh quality delivered to your door. Experience authentic dairy excellence with every glass.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  onClick={() => router.push('/')}
+                  size="lg"
+                  className="text-lg px-8 py-6 rounded-full bg-gradient-to-r from-amber-200 to-amber-100 text-red-900 hover:from-white hover:to-amber-50 font-bold shadow-lg hover:shadow-xl transition-all"
+                >
+                  Explore Products
+                </Button>
+              </motion.div>
+
+              {/* <motion.div
                    whileHover={{ scale: 1.05 }}
                    whileTap={{ scale: 0.95 }}
                  >
@@ -189,69 +206,69 @@ export default function DairyPage() {
                      Shop Now
                    </Button>
                  </motion.div> */}
-               </motion.div>
-       
-               {/* Stats Section */}
-               <motion.div
-                 variants={itemVariants}
-                 className="grid grid-cols-3 gap-4 sm:gap-8 mt-12"
-               >
-                 {[
-                   { number: '100%', label: 'Pure & Fresh' },
-                   { number: '24/7', label: 'Delivery Ready' },
-                   { number: '5000+', label: 'Happy Customers' },
-                 ].map((stat, index) => (
-                   <motion.div
-                     key={index}
-                     whileHover={{ y: -5 }}
-                     className="p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/20 transition-all"
-                   >
-                     <p className="text-2xl sm:text-3xl font-bold text-amber-200">{stat.number}</p>
-                     <p className="text-sm sm:text-base text-white/80">{stat.label}</p>
-                   </motion.div>
-                 ))}
-               </motion.div>
-             </motion.div>
-       
-             {/* Scroll Indicator */}
-             <motion.div
-               className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20"
-               animate={{ y: [0, 10, 0] }}
-               transition={{ duration: 2, repeat: Infinity }}
-             >
-               <motion.div
-                 whileHover={{ scale: 1.2 }}
-                 className="cursor-pointer"
-                 onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
-               >
-                 <svg
-                   className="w-8 h-8 text-amber-200 drop-shadow-lg"
-                   fill="none"
-                   stroke="currentColor"
-                   viewBox="0 0 24 24"
-                 >
-                   <path
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                     strokeWidth={2}
-                     d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                   />
-                 </svg>
-               </motion.div>
-             </motion.div>
-       
-             {/* Floating Elements */}
-             <motion.div
-               className="absolute top-20 right-10 w-32 h-32 bg-amber-300/10 rounded-full blur-3xl"
-               animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
-               transition={{ duration: 8, repeat: Infinity }}
-             />
-             <motion.div
-               className="absolute bottom-20 left-10 w-40 h-40 bg-red-400/10 rounded-full blur-3xl"
-               animate={{ x: [0, -20, 0], y: [0, 20, 0] }}
-               transition={{ duration: 10, repeat: Infinity }}
-             />
-           </section>
+            </motion.div>
+
+            {/* Stats Section */}
+            <motion.div
+              variants={itemVariants}
+              className="grid grid-cols-3 gap-4 sm:gap-8 mt-12"
+            >
+              {[
+                { number: '100%', label: 'Pure & Fresh' },
+                { number: '24/7', label: 'Delivery Ready' },
+                { number: '5000+', label: 'Happy Customers' },
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  whileHover={{ y: -5 }}
+                  className="p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/20 transition-all"
+                >
+                  <p className="text-2xl sm:text-3xl font-bold text-amber-200">{stat.number}</p>
+                  <p className="text-sm sm:text-base text-white/80">{stat.label}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+
+          {/* Scroll Indicator */}
+          <motion.div
+            className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20"
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <motion.div
+              whileHover={{ scale: 1.2 }}
+              className="cursor-pointer"
+              onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+            >
+              <svg
+                className="w-8 h-8 text-amber-200 drop-shadow-lg"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
+              </svg>
+            </motion.div>
+          </motion.div>
+
+          {/* Floating Elements */}
+          <motion.div
+            className="absolute top-20 right-10 w-32 h-32 bg-amber-300/10 rounded-full blur-3xl"
+            animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
+            transition={{ duration: 8, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute bottom-20 left-10 w-40 h-40 bg-red-400/10 rounded-full blur-3xl"
+            animate={{ x: [0, -20, 0], y: [0, 20, 0] }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
+        </section>
 
         {/* Products Section */}
         <section className="py-24 px-4">
@@ -296,12 +313,21 @@ export default function DairyPage() {
                           <Button
                             size="lg"
                             className="rounded-full px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                            onClick={() => { gotoParticularProduct(product) }}
+                            onClick={() => {
+                              if (product.id.startsWith('jag')) {
+                                gotoParticularProductKg(product);
+                              } else {
+                                gotoParticularProduct(product);
+                              }
+                            }}
                           >
                             Explore Product
                           </Button>
                         </div>
                       </div>
+
+
+
                     </div>
                   </CardContent>
                 </Card>

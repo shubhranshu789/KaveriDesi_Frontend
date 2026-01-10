@@ -42,9 +42,11 @@ function ProductContent() {
 
 
 
-  // const basePrice = Number(searchParams.get('price')) || 1099;
+  // const basePrice = Number(searchParams.get('price')) || 1000;
+
   const priceString = searchParams.get('price') || '0';
   const basePrice = Number(priceString.replace(/[^0-9]/g, '')) || 1000;
+
 
   const [selectedPages, setSelectedPages] = useState<50 | 100 | 200>(50);
 
@@ -54,9 +56,9 @@ function ProductContent() {
       case 50:
         return basePrice;
       case 100:
-        return basePrice + 200;
-      case 200:
         return basePrice + 300;
+      case 200:
+        return basePrice + 500;
       default:
         return basePrice;
     }
@@ -67,13 +69,13 @@ function ProductContent() {
   const getQuantityLabel = (pages: any) => {
     switch (pages) {
       case 50:
-        return '500 ml';
+        return '500 g';
       case 100:
-        return '1 Liter';
+        return '1 Kg';
       case 200:
-        return '2 Liter';
+        return '2 Kg';
       default:
-        return '500 ml';
+        return '500 g';
     }
   };
 
@@ -465,7 +467,7 @@ function ProductContent() {
                       className="w-5 h-5 accent-blue-600"
                     />
                     <div className="flex-1">
-                      <span className="font-medium">500 ml</span>
+                      <span className="font-medium">500 g</span>
                       <span className="ml-2 text-gray-600">- ₹{basePrice}</span>
                     </div>
                   </label>
@@ -480,9 +482,9 @@ function ProductContent() {
                       className="w-5 h-5 accent-blue-600"
                     />
                     <div className="flex-1">
-                      <span className="font-medium">1 Liter</span>
-                      <span className="ml-2 text-gray-600">- ₹{basePrice + 200}</span>
-                      <span className="ml-2 text-sm text-green-600">(+₹200)</span>
+                      <span className="font-medium">1 Kg</span>
+                      <span className="ml-2 text-gray-600">- ₹{basePrice + 300}</span>
+                      <span className="ml-2 text-sm text-green-600">(+₹300)</span>
                     </div>
                   </label>
 
@@ -496,9 +498,9 @@ function ProductContent() {
                       className="w-5 h-5 accent-blue-600"
                     />
                     <div className="flex-1">
-                      <span className="font-medium">2 Liter</span>
-                      <span className="ml-2 text-gray-600">- ₹{basePrice + 300}</span>
-                      <span className="ml-2 text-sm text-green-600">(+₹300)</span>
+                      <span className="font-medium">2 Kg</span>
+                      <span className="ml-2 text-gray-600">- ₹{basePrice + 500}</span>
+                      <span className="ml-2 text-sm text-green-600">(+₹500)</span>
                     </div>
                   </label>
                 </div>
