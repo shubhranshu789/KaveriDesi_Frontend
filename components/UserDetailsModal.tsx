@@ -57,7 +57,7 @@ export default function UserDetailsModal({ userId, onClose }: UserDetailsModalPr
 
     const fetchUserDetails = async () => {
         try {
-            const response = await fetch(`http://localhost:5000/users/${userId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`);
             const data = await response.json();
             setUser(data);
         } catch (error) {
@@ -69,7 +69,7 @@ export default function UserDetailsModal({ userId, onClose }: UserDetailsModalPr
 
     const updateOrderStatus = async (orderId: string, newStatus: string, trackingId?: string) => {
         try {
-            await fetch(`http://localhost:5000/orders/${userId}/${orderId}`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${userId}/${orderId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

@@ -60,7 +60,7 @@ const CartPage = () => {
       const userString = localStorage.getItem('user');
       const user = JSON.parse(userString);
 
-      const response = await fetch('http://localhost:5000/updatecartquantity', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/updatecartquantity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,7 +106,7 @@ const CartPage = () => {
       const userString = localStorage.getItem('user');
       const user = JSON.parse(userString);
 
-      const response = await fetch('http://localhost:5000/removefromcart', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/removefromcart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user._id, productId: productId })

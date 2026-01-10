@@ -82,7 +82,7 @@ function ReviewSection() {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/reviews/${pid}?page=${page}&limit=5`
+        `${process.env.NEXT_PUBLIC_API_URL}/reviews/${pid}?page=${page}&limit=5`
       );
       const data = await response.json();
       
