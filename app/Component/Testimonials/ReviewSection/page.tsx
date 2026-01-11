@@ -134,7 +134,7 @@ function ReviewSection() {
       const data = await response.json();
       
       if (data.success) {
-        alert('Review submitted successfully!');
+        // alert('Review submitted successfully!');
         setFormData(prev => ({
           ...prev,
           rating: 5,

@@ -32,7 +32,7 @@ const CartPage = () => {
     try {
       const userString = localStorage.getItem('user');
       if (!userString) {
-        alert('Please login first');
+        // alert('Please login first');
         router.push('/')
         return;
       }

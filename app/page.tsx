@@ -3,58 +3,35 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
-
-
-import { motion } from 'framer-motion';
-
+import { motion, useScroll, useSpring } from 'framer-motion';
 import Testimonial from "../app/Component/Testimonials/page"
-import Footer from "../app/Component/Footer/page"
 import Navbar from "@/components/navbar"
 import { useEffect, useState } from 'react'
 
-// import "../public/Vdos/ghee.mp4"
-
 export default function DairyPage() {
-
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Progress bar for scroll depth
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-
-
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: 'easeOut' },
-    },
-  };
-
-  const router = useRouter();
   const products = [
     {
       id: 'milk',
       name: 'Fresh Milk',
-      description: 'Pure and creamy farm-fresh milk, packed with essential nutrients and calcium for your daily health. Perfect for your morning coffee or cereal.',
+      badge: 'Farm to Table',
+      description: 'Pure and creamy farm-fresh milk, packed with essential nutrients and calcium for your daily health.',
       image: '/Products/milk.jpg',
       image2: '/Products/milk.jpg',
       videoUrl: '/Vdos/milk.mp4',
@@ -62,8 +39,9 @@ export default function DairyPage() {
     },
     {
       id: 'ghee',
-      name: 'Ghee',
-      description: 'Handcrafted premium cheese aged to perfection, delivering rich flavors in every bite. Made from the finest dairy ingredients.',
+      name: 'Pure Desi Ghee',
+      badge: 'Traditional Method',
+      description: 'Handcrafted premium ghee clarified to perfection, delivering rich aroma and health benefits in every spoon.',
       image: '/Products/ghee.jpg',
       image2: '/Products/ghee.jpg',
       videoUrl: '/Vdos/ghee.mp4',
@@ -71,8 +49,9 @@ export default function DairyPage() {
     },
     {
       id: 'jag',
-      name: 'Jagrery',
-      description: 'Smooth and delicious probiotic yogurt, perfect for a healthy breakfast or snack any time. Rich in beneficial cultures.',
+      name: 'Organic Jaggery',
+      badge: 'Natural Sweetener',
+      description: 'Smooth and delicious unrefined sugar, perfect for a healthy lifestyle. Rich in iron and minerals.',
       image: '/Products/jagry.jpg',
       image2: '/Products/jagry.jpg',
       videoUrl: '/Vdos/jagrery.mp4',
@@ -80,269 +59,156 @@ export default function DairyPage() {
     }
   ];
 
-  const gotoParticularProduct = (product: { id: any; image: any; image2: any; name: any; price: any; description: any; }) => {
+  const handleNavigation = (product: any) => {
     const query = new URLSearchParams({
       id: product.id,
       image: product.image,
       image2: product.image2,
       title: product.name,
       price: product.price,
-      description: product.description
+      description: product.description,
+      videoUrl: product.videoUrl
     }).toString();
 
-    router.push(`/Component/ParticularProduct2?${query}`);
+    const path = product.id.startsWith('jag') ? 'ParticularProductKg' : 'ParticularProduct2';
+    router.push(`/Component/${path}?${query}`);
   };
-
-
-  const gotoParticularProductKg = (product: { id: any; image: any; image2: any; name: any; price: any; description: any; }) => {
-    const query = new URLSearchParams({
-      id: product.id,
-      image: product.image,
-      image2: product.image2,
-      title: product.name,
-      price: product.price,
-      description: product.description
-    }).toString();
-
-    router.push(`/Component/ParticularProductKg?${query}`);
-  };
-
 
   return (
     <div>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        {/* Hero Section with Video */}
-        <section className="relative h-screen flex items-center justify-center overflow-hidden group">
-          {/* Background Video with Parallax */}
-          <motion.div
-            className="absolute inset-0 w-full h-full"
-            initial={{ scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.6 }}
-          >
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            >
-              <source src="/Vdos/hero.mp4" type="video/mp4" />
-            </video>
+      <div className="relative">
+        
+        {/* Scroll Progress Bar */}
+        <motion.div className="fixed top-0 left-0 right-0 h-1 bg-amber-400 origin-left z-50" style={{ scaleX }} />
 
-            {/* Animated Overlay */}
-            <motion.div
-              className="absolute inset-0 bg-black/40"
-              initial={{ opacity: 0.4 }}
-              whileHover={{ opacity: 0.5 }}
-              transition={{ duration: 0.3 }}
-            />
-
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
-          </motion.div>
-
-          {/* Hero Content */}
-          <motion.div
-            className="container relative z-10 text-center px-4 max-w-5xl"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {/* Badge */}
-            <motion.div
-              variants={itemVariants}
-              className="inline-block mb-6 px-6 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white text-sm font-semibold hover:bg-white/30 transition-all cursor-pointer"
-            >
-              ✨ Welcome to Kaveri Desi
-            </motion.div>
-
-            {/* Main Heading */}
-            <motion.h1
-              variants={itemVariants}
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 tracking-tight drop-shadow-2xl leading-tight"
-            >
-              <span className="bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
-                Pure Dairy Goodness
-              </span>
-            </motion.h1>
-
-            {/* Subtitle */}
-            <motion.p
-              variants={itemVariants}
-              className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow-lg leading-relaxed"
-            >
-              Farm fresh quality delivered to your door. Experience authentic dairy excellence with every glass.
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
-            >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  onClick={() => router.push('/')}
-                  size="lg"
-                  className="text-lg px-8 py-6 rounded-full bg-gradient-to-r from-amber-200 to-amber-100 text-red-900 hover:from-white hover:to-amber-50 font-bold shadow-lg hover:shadow-xl transition-all"
-                >
-                  Explore Products
-                </Button>
-              </motion.div>
-
-              {/* <motion.div
-                   whileHover={{ scale: 1.05 }}
-                   whileTap={{ scale: 0.95 }}
-                 >
-                   <Button
-                     onClick={() => router.push('/Component/Auth/SignIn')}
-                     size="lg"
-                     className="text-lg px-8 py-6 rounded-full bg-white/20 backdrop-blur-md border-2 border-white text-white hover:bg-white/30 font-bold shadow-lg hover:shadow-xl transition-all"
-                   >
-                     Shop Now
-                   </Button>
-                 </motion.div> */}
-            </motion.div>
-
-            {/* Stats Section */}
-            <motion.div
-              variants={itemVariants}
-              className="grid grid-cols-3 gap-4 sm:gap-8 mt-12"
-            >
-              {[
-                { number: '100%', label: 'Pure & Fresh' },
-                { number: '24/7', label: 'Delivery Ready' },
-                { number: '5000+', label: 'Happy Customers' },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  whileHover={{ y: -5 }}
-                  className="p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg hover:bg-white/20 transition-all"
-                >
-                  <p className="text-2xl sm:text-3xl font-bold text-amber-200">{stat.number}</p>
-                  <p className="text-sm sm:text-base text-white/80">{stat.label}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div
-            className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20"
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <motion.div
-              whileHover={{ scale: 1.2 }}
-              className="cursor-pointer"
-              onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
-            >
-              <svg
-                className="w-8 h-8 text-amber-200 drop-shadow-lg"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                />
-              </svg>
-            </motion.div>
-          </motion.div>
-
-          {/* Floating Elements */}
-          <motion.div
-            className="absolute top-20 right-10 w-32 h-32 bg-amber-300/10 rounded-full blur-3xl"
-            animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute bottom-20 left-10 w-40 h-40 bg-red-400/10 rounded-full blur-3xl"
-            animate={{ x: [0, -20, 0], y: [0, 20, 0] }}
-            transition={{ duration: 10, repeat: Infinity }}
-          />
-        </section>
-
-        {/* Products Section */}
-        <section className="py-24 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <h2 className="text-5xl md:text-6xl font-bold text-center mb-4 text-slate-900">Our Premium Collection</h2>
-            <p className="text-center text-slate-600 mb-20 text-lg">Discover the finest dairy products</p>
-
-            <div className="space-y-24">
-              {products.map((product, index) => (
-                <Card
-                  key={product.id}
-                  className="overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300"
-                >
-                  <CardContent className="p-0">
-                    <div className={`grid md:grid-cols-2 gap-0 items-center ${index % 2 === 1 ? 'md:grid-flow-dense' : ''
-                      }`}>
-                      {/* Video */}
-                      <div className={`relative h-80 md:h-96 overflow-hidden bg-slate-100 ${index % 2 === 1 ? 'md:col-start-2' : ''
-                        }`}>
-                        <video
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          className="w-full h-full object-fit"
-                        >
-                          <source src={product.videoUrl} type="video/mp4" />
-                        </video>
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="p-8 md:p-12 bg-white">
-                        <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-full mb-4">
-                          Product {product.id}
-                        </div>
-                        <h3 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">{product.name}</h3>
-                        <p className="text-slate-600 text-lg mb-8 leading-relaxed">{product.description}</p>
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                          <span className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            {product.price}
-                          </span>
-                          <Button
-                            size="lg"
-                            className="rounded-full px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                            onClick={() => {
-                              if (product.id.startsWith('jag')) {
-                                gotoParticularProductKg(product);
-                              } else {
-                                gotoParticularProduct(product);
-                              }
-                            }}
-                          >
-                            Explore Product
-                          </Button>
-                        </div>
-                      </div>
-
-
-
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+        <main className="min-h-screen bg-[#fafaf9]">
+          
+          {/* --- HERO SECTION --- */}
+          <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 z-0 ">
+              <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+                <source src="/Vdos/hero.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
             </div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1 }}
+              className="container relative z-10 text-center px-4"
+            >
+              <motion.span 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-200 text-sm font-medium mb-6 inline-block backdrop-blur-md"
+              >
+                ✨ Pure. Organic. Local.
+              </motion.span>
+              <h1 className="text-6xl md:text-8xl font-extrabold text-white mb-6 tracking-tight">
+                Kaveri <span className="text-amber-300">Desi</span>
+              </h1>
+              <p className="text-lg md:text-2xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
+                Bringing the authentic taste of the countryside directly to your doorstep.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button 
+                  size="lg" 
+                  className="bg-amber-400 hover:bg-amber-500 text-black font-bold rounded-full px-10 py-7 text-lg transition-transform hover:scale-105"
+                  onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+                >
+                  Shop Fresh Now
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Floating Stats Card (Live Feel) */}
+            <div className="absolute bottom-12 left-0 right-0 hidden md:block">
+              <div className="container mx-auto flex justify-center gap-12 text-white">
+                <div className="text-center">
+                  <p className="text-3xl font-bold">10k+</p>
+                  <p className="text-xs uppercase tracking-widest opacity-70">Deliveries</p>
+                </div>
+                <div className="h-10 w-[1px] bg-white/20" />
+                <div className="text-center">
+                  <p className="text-3xl font-bold">100%</p>
+                  <p className="text-xs uppercase tracking-widest opacity-70">Organic</p>
+                </div>
+                <div className="h-10 w-[1px] bg-white/20" />
+                <div className="text-center">
+                  <p className="text-3xl font-bold">24h</p>
+                  <p className="text-xs uppercase tracking-widest opacity-70">Freshness</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* --- PRODUCTS SECTION --- */}
+          <section className="py-24 px-4 bg-white">
+            <div className="container mx-auto max-w-6xl">
+              <div className="mb-20 text-center">
+                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">Our Premium Collection</h2>
+                <div className="h-1.5 w-20 bg-amber-400 mx-auto rounded-full" />
+              </div>
+
+              <div className="grid gap-20">
+                {products.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.7, ease: "easeOut" }}
+                  >
+                    <Card className="border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden rounded-[2rem]">
+                      <CardContent className="p-0">
+                        <div className={`flex flex-col ${index % 2 === 1 ? 'md:flex-row-reverse' : 'md:flex-row'} items-stretch`}>
+                          {/* Video Side */}
+                          <div className="w-full md:w-1/2 relative h-[350px] md:h-auto overflow-hidden">
+                            <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                              <source src={product.videoUrl} type="video/mp4" />
+                            </video>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                          </div>
+
+                          {/* Text Side */}
+                          <div className="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center bg-white">
+                            <span className="text-amber-600 font-bold uppercase tracking-widest text-xs mb-3">{product.badge}</span>
+                            <h3 className="text-3xl md:text-5xl font-bold mb-6 text-slate-800">{product.name}</h3>
+                            <p className="text-slate-500 text-lg mb-8 leading-relaxed">
+                              {product.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-slate-400 text-sm">Starting from</p>
+                                <p className="text-3xl font-black text-slate-900">{product.price}</p>
+                              </div>
+                              <Button 
+                                onClick={() => handleNavigation(product)}
+                                className="bg-slate-900 text-white hover:bg-amber-500 hover:text-black rounded-full px-8 py-6 transition-all"
+                              >
+                                Details
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* --- TESTIMONIALS --- */}
+          <div className="bg-slate-50 py-20">
+            <Testimonial />
           </div>
-        </section>
 
-        <Testimonial />
-
-        {/* Footer */}
-        {/* <Footer/> */}
-
+        </main>
       </div>
     </div>
-
   )
 }
