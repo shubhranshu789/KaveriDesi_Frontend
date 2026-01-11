@@ -74,7 +74,7 @@ function ProductContent() {
 
         const user = JSON.parse(userString);
         const response = await fetch(
-          `http://localhost:5000/checkcart?userId=${user._id}&productId=${pid}&quantityType=${selectedPages}`
+          `${process.env.NEXT_PUBLIC_API_URL}/checkcart?userId=${user._id}&productId=${pid}&quantityType=${selectedPages}`
         );
         const data = await response.json();
 
@@ -105,7 +105,7 @@ function ProductContent() {
 
         const user = JSON.parse(userString);
         const response = await fetch(
-          `http://localhost:5000/checkwishlist?userId=${user._id}&productId=${pid}`
+          `${process.env.NEXT_PUBLIC_API_URL}/checkwishlist?userId=${user._id}&productId=${pid}`
         );
         const data = await response.json();
 
