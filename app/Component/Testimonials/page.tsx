@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Quote, Star, Verified, Heart, TrendingUp } from 'lucide-react';
 
 interface Testimonial {
   id: number;
@@ -11,6 +11,8 @@ interface Testimonial {
   rating: number;
   category: string;
   text: string;
+  location?: string;
+  verified?: boolean;
 }
 
 const testimonials: Testimonial[] = [
@@ -20,6 +22,8 @@ const testimonials: Testimonial[] = [
     image: "/testimonial1.jpg",
     rating: 5,
     category: "A2 Cow Ghee",
+    location: "Mumbai, Maharashtra",
+    verified: true,
     text: "Nani's Bilona Ghee has earned a permanent spot in my pantry. Its purity and flavor are unmatched by any other brand I've tried. I love supporting a company that values tradition and quality."
   },
   {
@@ -28,6 +32,8 @@ const testimonials: Testimonial[] = [
     image: "/testimonial2.jpg",
     rating: 5,
     category: "A2 Cow Ghee",
+    location: "Delhi, NCR",
+    verified: true,
     text: "I've been incorporating more Ayurvedic practices into my lifestyle, and Nani's Bilona Ghee fits perfectly into that philosophy. It's not just ghee; it's a holistic experience."
   },
   {
@@ -36,6 +42,8 @@ const testimonials: Testimonial[] = [
     image: "/testimonial3.jpg",
     rating: 5,
     category: "A2 Cow Ghee",
+    location: "Bangalore, Karnataka",
+    verified: true,
     text: "I've tried various brands claiming to offer authentic A2 cow ghee, but none match the richness and texture of Nani's Bilona Ghee. It's evident that they prioritize traditional methods and high-quality ingredients. My morning chai wouldn't be the same without it!"
   },
   {
@@ -44,6 +52,8 @@ const testimonials: Testimonial[] = [
     image: "/testimonial4.jpg",
     rating: 5,
     category: "Indian Buffalo Ghee",
+    location: "Kolkata, West Bengal",
+    verified: true,
     text: "Nani's Bilona Ghee has earned a permanent spot in my pantry. Its purity and flavor are unmatched by any other brand I've tried. I love supporting a company that values tradition and quality, and it's evident in every spoonful of this delicious ghee."
   },
   {
@@ -52,6 +62,8 @@ const testimonials: Testimonial[] = [
     image: "/testimonial5.jpg",
     rating: 5,
     category: "A2 Cow Ghee",
+    location: "Jaipur, Rajasthan",
+    verified: true,
     text: "Nani's Bilona Ghee has become a kitchen essential for me. Whether I'm sauteing vegetables or drizzling it over warm rotis, its rich flavor enhances every dish."
   }
 ];
@@ -59,6 +71,18 @@ const testimonials: Testimonial[] = [
 export default function TestimonialCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  // Auto-play functionality
+  useState(() => {
+    if (!isAutoPlaying) return;
+    
+    const interval = setInterval(() => {
+      paginate(1);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  });
 
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
@@ -72,15 +96,16 @@ export default function TestimonialCarousel() {
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
-      <motion.span
+      <motion.div
         key={i}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
         transition={{ delay: i * 0.1, type: "spring", stiffness: 500 }}
-        className="text-yellow-400 text-xl drop-shadow-sm"
       >
-        ★
-      </motion.span>
+        <Star 
+          className={`w-5 h-5 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+        />
+      </motion.div>
     ));
   };
 
@@ -101,52 +126,96 @@ export default function TestimonialCarousel() {
 
   const slideVariants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? 400 : -400,
+      x: direction > 0 ? 1000 : -1000,
       opacity: 0,
-      scale: 0.7,
-      rotateY: direction > 0 ? 45 : -45,
+      scale: 0.5,
+      rotateY: direction > 0 ? 90 : -90,
     }),
     center: (position: number) => ({
-      x: position * 400,
-      opacity: position === 0 ? 1 : 0.35,
-      scale: position === 0 ? 1.05 : 0.75,
+      x: position * 420,
+      opacity: position === 0 ? 1 : 0.3,
+      scale: position === 0 ? 1 : 0.7,
       rotateY: 0,
-      zIndex: position === 0 ? 10 : 1,
+      zIndex: position === 0 ? 20 : 1,
     }),
     exit: (direction: number) => ({
-      x: direction < 0 ? 400 : -400,
+      x: direction < 0 ? 1000 : -1000,
       opacity: 0,
-      scale: 0.7,
-      rotateY: direction < 0 ? 45 : -45,
+      scale: 0.5,
+      rotateY: direction < 0 ? 90 : -90,
     })
   };
 
   return (
-    <div className="w-full py-16 px-4 bg-gradient-to-b from-[#b5c4a1] to-[#a8b896]">
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full py-12 sm:py-16 lg:py-20 px-4 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 90, 0],
+          }}
+          transition={{ duration: 20, repeat: Infinity }}
+          className="absolute top-10 left-10 w-64 h-64 bg-[#8B1F1F]/5 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [90, 0, 90],
+          }}
+          transition={{ duration: 20, repeat: Infinity }}
+          className="absolute bottom-10 right-10 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl"
+        />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#8B1F1F]/10 text-[#8B1F1F] rounded-full font-semibold text-sm mb-4"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Trusted by Thousands
+          </motion.div>
+          
           <motion.h2 
             initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-6xl font-serif text-[#5a6b4d] mb-4 drop-shadow-sm"
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-4 sm:mb-6"
           >
-            Reviews from our customers
+            Reviews from our{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B1F1F] to-amber-600">
+              Happy Customers
+            </span>
           </motion.h2>
+          
           <motion.div 
             initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="flex items-center justify-center gap-3 bg-white/30 backdrop-blur-sm rounded-full px-6 py-2 w-fit mx-auto"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
           >
-            <span className="text-[#5a6b4d] text-xl font-bold">4.9 / 5.0</span>
-            <div className="flex">{renderStars(5)}</div>
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
+              <span className="text-gray-900 text-xl sm:text-2xl font-black">4.9</span>
+              <span className="text-gray-600 text-sm">/ 5.0</span>
+            </div>
+            <div className="flex gap-1">{renderStars(5)}</div>
+            <span className="text-gray-600 text-sm font-medium">Based on 1,200+ reviews</span>
           </motion.div>
         </div>
 
         {/* Carousel Container */}
-        <div className="relative overflow-hidden">
-          <div className="flex items-center justify-center min-h-[500px] px-4 md:px-24">
+        <div className="relative">
+          <div 
+            className="flex items-center justify-center min-h-[550px] sm:min-h-[600px] px-4 md:px-24"
+            onMouseEnter={() => setIsAutoPlaying(false)}
+            onMouseLeave={() => setIsAutoPlaying(true)}
+          >
             <AnimatePresence initial={false} custom={direction}>
               {getVisibleCards().map(({ testimonial, position, index }) => {
                 const isCenter = position === 0;
@@ -160,116 +229,150 @@ export default function TestimonialCarousel() {
                     animate="center"
                     exit="exit"
                     transition={{
-                      x: { type: "spring", stiffness: 350, damping: 35 },
-                      opacity: { duration: 0.4 },
-                      scale: { duration: 0.4 },
-                      rotateY: { duration: 0.4 }
+                      x: { type: "spring", stiffness: 300, damping: 30 },
+                      opacity: { duration: 0.5 },
+                      scale: { duration: 0.5 },
+                      rotateY: { duration: 0.5 }
                     }}
-                    style={{ perspective: 1000 }}
-                    className={`absolute bg-gradient-to-br from-white to-gray-50 rounded-[2rem] p-10 w-full md:w-[450px] ${
+                    style={{ 
+                      perspective: 1000,
+                      transformStyle: 'preserve-3d'
+                    }}
+                    className={`absolute bg-white rounded-3xl p-6 sm:p-8 lg:p-10 w-full max-w-[400px] sm:max-w-[450px] ${
                       isCenter 
-                        ? 'shadow-[0_20px_60px_rgba(0,0,0,0.3)] ring-2 ring-white/50' 
+                        ? 'shadow-[0_20px_80px_rgba(139,31,31,0.25)] ring-2 ring-[#8B1F1F]/20' 
                         : 'pointer-events-none shadow-lg'
                     }`}
                   >
-                    {/* Decorative Quote Icon */}
+                    {/* Decorative Elements */}
                     <motion.div
                       initial={{ rotate: 0, scale: 1 }}
                       animate={{ 
-                        rotate: isCenter ? [0, 5, -5, 0] : 0,
-                        scale: isCenter ? 1 : 0.8
+                        rotate: isCenter ? [0, 10, -10, 0] : 0,
+                        scale: isCenter ? [1, 1.05, 1] : 0.8
                       }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                      className="absolute -top-4 -right-4 bg-gradient-to-br from-[#5a6b4d] to-[#7a8b6d] p-4 rounded-full shadow-lg"
+                      transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                      className="absolute -top-4 -right-4 bg-gradient-to-br from-[#8B1F1F] to-[#6B1515] p-4 rounded-full shadow-xl"
                     >
-                      <Quote className="w-8 h-8 text-white" />
+                      <Quote className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </motion.div>
 
+                    {/* Heart Badge */}
+                    <motion.div
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                      className="absolute -top-3 -left-3 bg-gradient-to-br from-pink-500 to-red-500 p-3 rounded-full shadow-lg cursor-pointer"
+                    >
+                      <Heart className="w-5 h-5 text-white fill-white" />
+                    </motion.div>
+
+                    {/* Category Badge */}
                     <div className="mb-6">
-                      <motion.p 
-                        className="text-xs font-semibold text-[#5a6b4d] uppercase tracking-widest mb-3 bg-[#b5c4a1]/20 px-4 py-1.5 rounded-full w-fit"
+                      <motion.span
+                        className="inline-flex items-center gap-2 text-xs font-bold text-[#8B1F1F] uppercase tracking-widest bg-[#8B1F1F]/10 px-4 py-2 rounded-full"
                         animate={isCenter ? { scale: [1, 1.05, 1] } : {}}
                         transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
                       >
+                        <Star className="w-3 h-3 fill-[#8B1F1F]" />
                         {testimonial.category}
-                      </motion.p>
-                      <p className="text-gray-700 text-lg leading-relaxed min-h-[180px] font-medium">
-                        "{testimonial.text}"
-                      </p>
+                      </motion.span>
                     </div>
 
-                    <div className="flex items-center gap-5 pt-6 border-t-2 border-gray-200/50">
-                      <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        className="relative"
-                      >
-                        <img
-                          src={testimonial.image}
-                          alt={testimonial.name}
-                          className="w-16 h-16 rounded-full object-cover ring-4 ring-white shadow-md"
-                        />
-                        <motion.div
-                          className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
-                      </motion.div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-gray-900 text-lg">{testimonial.name}</h4>
-                        <div className="flex mt-1">{renderStars(testimonial.rating)}</div>
+                    {/* Review Text */}
+                    <p className="text-gray-700 text-base sm:text-lg leading-relaxed min-h-[160px] sm:min-h-[180px] font-medium mb-6">
+                      "{testimonial.text}"
+                    </p>
+
+                    {/* Divider */}
+                    <div className="relative mb-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t-2 border-gray-100"></div>
+                      </div>
+                      <div className="relative flex justify-center">
+                        <div className="bg-white px-4">
+                          <div className="flex gap-1">{renderStars(testimonial.rating)}</div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Subtle Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/10 rounded-[2rem] pointer-events-none" />
+                    {/* User Info */}
+                    <div className="flex items-center gap-4">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        className="relative flex-shrink-0"
+                      >
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-4 ring-white shadow-lg">
+                          <img
+                            src={testimonial.image}
+                            alt={testimonial.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/100?text=User';
+                            }}
+                          />
+                        </div>
+                        {testimonial.verified && (
+                          <motion.div
+                            className="absolute -bottom-1 -right-1 bg-gradient-to-br from-blue-500 to-blue-600 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <Verified className="w-3 h-3 text-white" />
+                          </motion.div>
+                        )}
+                      </motion.div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-gray-900 text-base sm:text-lg truncate">
+                            {testimonial.name}
+                          </h4>
+                          {testimonial.verified && (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                              Verified
+                            </span>
+                          )}
+                        </div>
+                        {testimonial.location && (
+                          <p className="text-gray-500 text-xs sm:text-sm mt-1 truncate">
+                            📍 {testimonial.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-[#8B1F1F]/5 rounded-3xl pointer-events-none" />
                   </motion.div>
                 );
               })}
             </AnimatePresence>
           </div>
 
-          {/* Navigation Buttons - Enhanced */}
+          {/* Navigation Buttons */}
           <motion.button
-            whileHover={{ scale: 1.15, x: -5 }}
+            whileHover={{ scale: 1.1, x: -5, backgroundColor: '#8B1F1F' }}
             whileTap={{ scale: 0.9 }}
             onClick={() => paginate(-1)}
-            className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 bg-gradient-to-br from-white to-gray-100 hover:from-white hover:to-white p-4 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-200 z-20 ring-2 ring-white/50"
+            className="absolute left-2 sm:left-4 lg:left-8 top-1/2 -translate-y-1/2 bg-white hover:text-white p-3 sm:p-4 rounded-full shadow-2xl transition-all duration-300 z-30 ring-2 ring-white/50 group"
             aria-label="Previous testimonial"
           >
-            <ChevronLeft className="w-7 h-7 text-[#5a6b4d]" strokeWidth={2.5} />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-[#8B1F1F] group-hover:text-white transition-colors" strokeWidth={2.5} />
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: 1.15, x: 5 }}
+            whileHover={{ scale: 1.1, x: 5, backgroundColor: '#8B1F1F' }}
             whileTap={{ scale: 0.9 }}
             onClick={() => paginate(1)}
-            className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 bg-gradient-to-br from-white to-gray-100 hover:from-white hover:to-white p-4 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-200 z-20 ring-2 ring-white/50"
+            className="absolute right-2 sm:right-4 lg:right-8 top-1/2 -translate-y-1/2 bg-white hover:text-white p-3 sm:p-4 rounded-full shadow-2xl transition-all duration-300 z-30 ring-2 ring-white/50 group"
             aria-label="Next testimonial"
           >
-            <ChevronRight className="w-7 h-7 text-[#5a6b4d]" strokeWidth={2.5} />
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-[#8B1F1F] group-hover:text-white transition-colors" strokeWidth={2.5} />
           </motion.button>
         </div>
 
-        {/* Enhanced Dots Indicator */}
-        <div className="flex justify-center gap-3 mt-12">
-          {testimonials.map((_, index) => (
-            <motion.button
-              key={index}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => {
-                setDirection(index > currentIndex ? 1 : -1);
-                setCurrentIndex(index);
-              }}
-              className={`transition-all duration-300 rounded-full ${
-                index === currentIndex
-                  ? 'w-12 h-3 bg-gradient-to-r from-[#5a6b4d] to-[#7a8b6d] shadow-lg'
-                  : 'w-3 h-3 bg-white/60 hover:bg-white shadow-md'
-              }`}
-              aria-label={`Go to testimonial ${index + 1}`}
-            />
-          ))}
-        </div>
+      
+
+        
       </div>
     </div>
   );

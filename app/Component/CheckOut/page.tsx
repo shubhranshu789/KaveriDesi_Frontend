@@ -3,6 +3,19 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ShoppingBag,
+  MapPin,
+  CreditCard,
+  Tag,
+  Trash2,
+  CheckCircle2,
+  Info,
+  Truck,
+  Shield,
+  Clock
+} from 'lucide-react';
 
 import Navbar from '@/components/navbar';
 
@@ -35,13 +48,13 @@ interface User {
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  
+
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     fullName: '',
@@ -53,23 +66,21 @@ function CheckoutContent() {
     pincode: '',
     country: 'India'
   });
-  
+
   const [errors, setErrors] = useState<Partial<ShippingAddress>>({});
-  
-  // NEW: Coupon states
+
+  // Coupon states
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   const [isFirstOrder, setIsFirstOrder] = useState(false);
   const [cartTotal, setCartTotal] = useState(0);
+  const [showCouponHint, setShowCouponHint] = useState(false);
 
-  // Load Razorpay script
   useEffect(() => {
     loadRazorpay();
-  }, []);
-
-  useEffect(() => {
     loadCheckoutData();
   }, []);
 
@@ -77,9 +88,7 @@ function CheckoutContent() {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
-    script.onload = () => {
-      setRazorpayLoaded(true);
-    };
+    script.onload = () => setRazorpayLoaded(true);
     document.head.appendChild(script);
   };
 
@@ -90,12 +99,12 @@ function CheckoutContent() {
         router.push('/');
         return;
       }
-      
+
       const parsedUser = JSON.parse(userData) as User;
       setUser(parsedUser);
-      
+
       const isBuyNow = searchParams.get('buyNow') === 'true';
-      
+
       if (isBuyNow) {
         const productData: Product = {
           productId: searchParams.get('id') || '',
@@ -109,16 +118,17 @@ function CheckoutContent() {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/getcart/${parsedUser._id}`);
         setProducts(response.data.cart || []);
       }
-      
-      // NEW: Check if first order and calculate cart total
-      const total = calculateTotal();
+
+      // Calculate cart total
+      const total = products.reduce((sum, p) => sum + (parseFloat(p.price) * p.quantity), 0);
       setCartTotal(total);
-      
+
+      // Check if first order
       const firstOrderResponse = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/check-first-order/${parsedUser._id}`
       );
       setIsFirstOrder(firstOrderResponse.data.isFirstOrder);
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading checkout data:', error);
@@ -126,20 +136,22 @@ function CheckoutContent() {
     }
   };
 
-  // NEW: Apply coupon logic
   const applyCoupon = async () => {
-    if (!user) return;
-    
+    if (!user || !couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+
     try {
-      setCouponError('');
-      
-      // Check eligibility via API
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/apply-coupon`, {
         userId: user._id,
-        cartTotal: calculateTotal(),
+        cartTotal: calculateSubtotal(),
         couponCode: couponCode.toUpperCase()
       });
-      
+
       if (response.data.success) {
         setCouponApplied(true);
         setCouponDiscount(response.data.discount);
@@ -150,13 +162,14 @@ function CheckoutContent() {
         setCouponDiscount(0);
       }
     } catch (error: any) {
-      setCouponError(error.response?.data?.message || 'Invalid coupon');
+      setCouponError(error.response?.data?.message || 'Invalid coupon code');
       setCouponApplied(false);
       setCouponDiscount(0);
+    } finally {
+      setCouponLoading(false);
     }
   };
 
-  // NEW: Remove coupon
   const removeCoupon = () => {
     setCouponApplied(false);
     setCouponDiscount(0);
@@ -166,36 +179,44 @@ function CheckoutContent() {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<ShippingAddress> = {};
-  
+
     if (!shippingAddress.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     }
-  
+
     if (!shippingAddress.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else if (!/^[6-9]\d{9}$/.test(shippingAddress.phone)) {
-      newErrors.phone = 'Please enter a valid 10-digit Indian phone number';
+      newErrors.phone = 'Enter valid 10-digit mobile number';
     }
-  
+
     if (!shippingAddress.addressLine1.trim()) {
       newErrors.addressLine1 = 'Address is required';
     }
-  
+
     if (!shippingAddress.city.trim()) {
       newErrors.city = 'City is required';
     }
-  
+
     if (!shippingAddress.state.trim()) {
       newErrors.state = 'State is required';
     }
-  
+
     if (!shippingAddress.pincode.trim()) {
       newErrors.pincode = 'Pincode is required';
     } else if (!/^\d{6}$/.test(shippingAddress.pincode)) {
-      newErrors.pincode = 'Please enter a valid 6-digit pincode';
+      newErrors.pincode = 'Enter valid 6-digit pincode';
     }
-  
+
     setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      // Scroll to first error
+      const firstErrorField = Object.keys(newErrors)[0];
+      const element = document.getElementById(firstErrorField);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -204,7 +225,7 @@ function CheckoutContent() {
       ...prev,
       [field]: value
     }));
-    
+
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -213,44 +234,185 @@ function CheckoutContent() {
     }
   }, [errors]);
 
-  const calculateTotal = useCallback((): number => {
-    const subtotal = products.reduce((total, product) => {
+  const calculateSubtotal = useCallback((): number => {
+    return products.reduce((total, product) => {
       return total + (parseFloat(product.price) * product.quantity);
     }, 0);
-    
-    // Apply discount if coupon is applied
-    if (couponApplied && couponDiscount > 0) {
-      return Math.max(0, subtotal - couponDiscount);
-    }
-    
-    return subtotal;
-  }, [products, couponApplied, couponDiscount]);
+  }, [products]);
 
-  // Get discount details for display
-  const getDiscountDetails = () => {
+  const calculateTotal = useCallback((): number => {
+    const subtotal = calculateSubtotal();
+    return Math.max(0, subtotal - couponDiscount);
+  }, [calculateSubtotal, couponDiscount]);
+
+  const getDiscountBadge = () => {
     if (!couponApplied || couponDiscount === 0) return null;
-    
+
     if (isFirstOrder) {
-      return 'First Order Special: 10% OFF';
+      return { text: 'FIRST10 Applied', subtitle: 'First Order Special: 10% OFF', icon: '🎉' };
     } else if (cartTotal > 2000) {
-      return 'Big Shopper: 15% OFF (Cart > ₹2000)';
+      return { text: 'BIG15 Applied', subtitle: 'Big Shopper: 15% OFF', icon: '🛒' };
     }
-    
-    return `Coupon Applied: Save ₹${couponDiscount.toFixed(2)}`;
+
+    return { text: 'Coupon Applied', subtitle: `Save ₹${couponDiscount.toFixed(2)}`, icon: '✨' };
   };
 
-  // COD Order Handler
+  // const handleCODOrder = async () => {
+  //   if (!validateForm() || !user) return;
+
+  //   setSubmitting(true);
+
+  //   try {
+  //     const orderId = `ORD${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  //     const originalTotal = calculateSubtotal();
+
+  //     const orderData = {
+  //       userId: user._id,
+  //       orderId,
+  //       orderItems: products,
+  //       subTotal: originalTotal,
+  //       discountAmount: couponDiscount,
+  //       totalAmount: calculateTotal(),
+  //       orderStatus: 'pending',
+  //       paymentMethod: 'cod',
+  //       paymentStatus: 'pending',
+  //       shippingAddress,
+  //       couponDiscount: couponDiscount
+  //     };
+
+  //     const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/placeorder`, orderData);
+
+  //     if (response.data.success) {
+  //       const isBuyNow = searchParams.get('buyNow') === 'true';
+  //       if (!isBuyNow) {
+  //         await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/clearcart/${user._id}`);
+  //       }
+  //       router.push(`/Component/Orders/OrderDetails?orderId=${orderId}`);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error placing COD order:', error);
+  //     alert('Failed to place order. Please try again.');
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // };
+
+  // const handleRazorpayOrder = async () => {
+  //   if (!validateForm() || !user || !razorpayLoaded) return;
+
+  //   setSubmitting(true);
+
+  //   try {
+  //     const totalInPaise = Math.round(calculateTotal() * 100);
+
+  //     const options: any = {
+  //       key: "rzp_test_S2KmVnYY70GNfF",
+  //       amount: totalInPaise,
+  //       currency: 'INR',
+  //       name: 'KAVERI देशी',
+  //       description: `Pay ₹${calculateTotal().toFixed(2)} for your order`,
+  //       prefill: {
+  //         name: user.name,
+  //         email: user.email,
+  //         contact: shippingAddress.phone || user.phone || ''
+  //       },
+  //       theme: {
+  //         color: '#8B1F1F'
+  //       },
+  //       modal: {
+  //         ondismiss: function() {
+  //           setSubmitting(false);
+  //           alert('Payment cancelled');
+  //         }
+  //       },
+  //       handler: async function (response: any) {
+  //         const orderId = `ORD${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  //         const originalTotal = calculateSubtotal();
+
+  //         const orderData = {
+  //           userId: user._id,
+  //           orderId,
+  //           orderItems: products,
+  //           subTotal: originalTotal,
+  //           discountAmount: couponDiscount,
+  //           totalAmount: calculateTotal(),
+  //           orderStatus: 'confirmed',
+  //           paymentMethod: 'razorpay',
+  //           paymentStatus: 'paid',
+  //           paymentDetails: {
+  //             razorpay_payment_id: response.razorpay_payment_id,
+  //             razorpay_order_id: response.razorpay_order_id,
+  //           },
+  //           shippingAddress,
+  //           couponDiscount: couponDiscount
+  //         };
+
+  //         try {
+  //           const placeOrderResponse = await axios.post(
+  //             `${process.env.NEXT_PUBLIC_API_URL}/placeorder`, 
+  //             orderData
+  //           );
+
+  //           if (placeOrderResponse.data.success) {
+  //             const isBuyNow = searchParams.get('buyNow') === 'true';
+  //             if (!isBuyNow) {
+  //               await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/clearcart/${user._id}`);
+  //             }
+  //             router.push(`/Component/Orders/OrderDetails?orderId=${orderId}`);
+  //           }
+  //         } catch (orderError) {
+  //           console.error('Order creation failed:', orderError);
+  //           alert('Payment successful but order creation failed. Contact support.');
+  //         }
+  //       }
+  //     };
+
+  //     const rzp: any = new (window as any).Razorpay(options);
+  //     rzp.open();
+
+  //   } catch (error) {
+  //     console.error('Payment error:', error);
+  //     alert('Failed to initiate payment. Please try again.');
+  //     setSubmitting(false);
+  //   }
+  // };
+
+  // const handlePaymentSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (paymentMethod === 'cod') {
+  //     handleCODOrder();
+  //   } else {
+  //     handleRazorpayOrder();
+  //   }
+  // };
+
+  // First, create a backend endpoint to create Razorpay order
+  // Add this function to handle creating Razorpay order on your backend
+ 
+ 
+  const createRazorpayOrder = async (amount: number) => {
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/create-razorpay-order`, {
+        amount: Math.round(amount * 100), // Convert to paise
+        currency: 'INR',
+        receipt: `receipt_${Date.now()}`
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating Razorpay order:', error);
+      throw error;
+    }
+  };
+
   const handleCODOrder = async () => {
     if (!validateForm() || !user) return;
 
     setSubmitting(true);
-    
+
     try {
       const orderId = `ORD${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-      const originalTotal = products.reduce((total, product) => {
-        return total + (parseFloat(product.price) * product.quantity);
-      }, 0);
-      
+      const originalTotal = calculateSubtotal();
+
       const orderData = {
         userId: user._id,
         orderId,
@@ -264,105 +426,164 @@ function CheckoutContent() {
         shippingAddress,
         couponDiscount: couponDiscount
       };
-      
+
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/placeorder`, orderData);
-      
+
       if (response.data.success) {
         const isBuyNow = searchParams.get('buyNow') === 'true';
         if (!isBuyNow) {
           await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/clearcart/${user._id}`);
         }
         router.push(`/Component/Orders/OrderDetails?orderId=${orderId}`);
+      } else {
+        alert('Failed to place order. Please try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing COD order:', error);
-      alert('Failed to place order. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to place order. Please try again.';
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Razorpay Order Handler (unchanged)
   const handleRazorpayOrder = async () => {
     if (!validateForm() || !user || !razorpayLoaded) return;
 
     setSubmitting(true);
-    
+
     try {
-      const originalTotal = products.reduce((total, product) => {
-        return total + (parseFloat(product.price) * product.quantity);
-      }, 0) * 100; // Convert to paise
-      
-      const options: any = {
+      // Step 1: Create Razorpay order on backend first
+      const totalAmount = calculateTotal();
+      const razorpayOrderData = await createRazorpayOrder(totalAmount);
+
+      if (!razorpayOrderData?.id) {
+        throw new Error('Failed to create payment order');
+      }
+
+      // Step 2: Generate our order ID
+      const ourOrderId = `ORD${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const originalTotal = calculateSubtotal();
+
+      // Step 3: Open Razorpay checkout
+      const options = {
         key: "rzp_test_S2KmVnYY70GNfF",
-        amount: originalTotal,
+        amount: Math.round(totalAmount * 100),
         currency: 'INR',
-        name: 'Your Store',
-        description: `Pay ₹${calculateTotal()} for your order`,
+        name: 'KAVERI देशी',
+        description: `Pay ₹${totalAmount.toFixed(2)} for your order`,
+        order_id: razorpayOrderData.id, // Use Razorpay order ID
         prefill: {
           name: user.name,
           email: user.email,
           contact: shippingAddress.phone || user.phone || ''
         },
         theme: {
-          color: '#3399cc'
+          color: '#8B1F1F'
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setSubmitting(false);
-            alert('Payment cancelled');
+            alert('Payment cancelled. You can try again anytime.');
           }
         },
         handler: async function (response: any) {
-          const orderId = `ORD${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-          const originalTotalAmount = products.reduce((total, product) => {
-            return total + (parseFloat(product.price) * product.quantity);
-          }, 0);
-          
+          console.log('Payment successful:', response);
+
+          // Step 4: Create order in your database after successful payment
           const orderData = {
             userId: user._id,
-            orderId,
+            orderId: ourOrderId,
             orderItems: products,
-            subTotal: originalTotalAmount,
+            subTotal: originalTotal,
             discountAmount: couponDiscount,
-            totalAmount: calculateTotal(),
+            totalAmount: totalAmount,
             orderStatus: 'confirmed',
             paymentMethod: 'razorpay',
             paymentStatus: 'paid',
             paymentDetails: {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
             },
             shippingAddress,
             couponDiscount: couponDiscount
           };
 
           try {
+            console.log('Creating order with data:', orderData);
+
             const placeOrderResponse = await axios.post(
-              `${process.env.NEXT_PUBLIC_API_URL}/placeorder`, 
-              orderData
+              `${process.env.NEXT_PUBLIC_API_URL}/placeorder`,
+              orderData,
+              {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                timeout: 10000 // 10 second timeout
+              }
             );
 
+            console.log('Order creation response:', placeOrderResponse.data);
+
             if (placeOrderResponse.data.success) {
+              // Clear cart if not buy now
               const isBuyNow = searchParams.get('buyNow') === 'true';
               if (!isBuyNow) {
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/clearcart/${user._id}`);
+                try {
+                  await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/clearcart/${user._id}`);
+                } catch (cartError) {
+                  console.error('Cart clearing failed (non-critical):', cartError);
+                }
               }
-              router.push(`/Component/Orders/OrderDetails?orderId=${orderId}`);
+
+              // Navigate to order details
+              router.push(`/Component/Orders/OrderDetails?orderId=${ourOrderId}`);
+            } else {
+              throw new Error(placeOrderResponse.data.message || 'Order creation failed');
             }
-          } catch (orderError) {
+          } catch (orderError: any) {
             console.error('Order creation failed:', orderError);
-            alert('Payment successful but order creation failed. Contact support.');
+
+            // Better error message
+            const errorMsg = orderError.response?.data?.message
+              || orderError.message
+              || 'Order creation failed';
+
+            alert(`Payment successful but ${errorMsg}. Your payment ID: ${response.razorpay_payment_id}. Please contact support with this ID.`);
+
+            // Optional: Send error to your backend for tracking
+            try {
+              await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/log-payment-error`, {
+                paymentId: response.razorpay_payment_id,
+                orderId: ourOrderId,
+                error: errorMsg,
+                userId: user._id
+              });
+            } catch (logError) {
+              console.error('Error logging failed:', logError);
+            }
+
+            setSubmitting(false);
           }
         }
       };
 
-      const rzp: any = new window.Razorpay(options);
+      const rzp = new (window as any).Razorpay(options);
+
+      // Add error event handler
+      rzp.on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response.error);
+        alert(`Payment failed: ${response.error.description}`);
+        setSubmitting(false);
+      });
+
       rzp.open();
-      
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('Failed to initiate payment. Please try again.');
+
+    } catch (error: any) {
+      console.error('Payment initialization error:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to initiate payment';
+      alert(errorMsg);
       setSubmitting(false);
     }
   };
@@ -376,300 +597,659 @@ function CheckoutContent() {
     }
   };
 
+
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-[#8B1F1F] border-t-transparent rounded-full"
+        />
+      </div>
+    );
   }
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen">
-        <p className="text-xl mb-4">No items to checkout</p>
-        <button 
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <ShoppingBag className="w-20 h-20 text-gray-300 mb-4" />
+        <p className="text-xl font-semibold text-gray-700 mb-2">No items to checkout</p>
+        <p className="text-sm text-gray-500 mb-6">Add products to your cart to proceed</p>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => router.push('/')}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg"
+          className="px-6 py-3 bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
         >
           Continue Shopping
-        </button>
+        </motion.button>
       </div>
     );
   }
 
   return (
-    <div>
-      <Navbar/>
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <form onSubmit={handlePaymentSubmit} className="space-y-6">
-              {/* NEW: Coupon Section */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold mb-4">Apply Coupon</h2>
-                
-                {!couponApplied ? (
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="Enter coupon code (FIRST10 or BIG15)"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={applyCoupon}
-                      className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div>
-                      <p className="font-semibold text-green-800">{getDiscountDetails()}</p>
-                      <p className="text-sm text-green-700">Save ₹{couponDiscount.toFixed(2)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={removeCoupon}
-                      className="text-red-600 hover:text-red-800 font-medium text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-                
-                {couponError && (
-                  <p className="text-red-500 text-sm mt-2">{couponError}</p>
-                )}
-                
-                {/* Auto-suggest available coupons */}
-                {(!couponApplied || !isFirstOrder) && (
-                  <div className="mt-3 text-xs text-gray-500">
-                    {isFirstOrder && '💎 FIRST10 - 10% OFF your first order'}
-                    {!isFirstOrder && cartTotal > 2000 && ' 🛒 BIG15 - 15% OFF on orders above ₹2000'}
-                  </div>
-                )}
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <Navbar />
 
-              {/* Shipping Address Section */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
-                {/* ... existing address fields unchanged ... */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.fullName}
-                      onChange={(e) => handleInputChange('fullName', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.fullName ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your full name"
-                    />
-                    {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 sm:mb-8"
+        >
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Secure Checkout</h1>
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              <Shield className="w-4 h-4 text-green-600" />
+              <span>Secure Payment</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Truck className="w-4 h-4 text-blue-600" />
+              <span>Free Delivery</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4 text-orange-600" />
+              <span>Fast Processing</span>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Left Column - Forms */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <form onSubmit={handlePaymentSubmit} className="space-y-4 sm:space-y-6">
+
+              {/* COUPON SECTION - Enhanced */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+              >
+                <div className="bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Tag className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                    <h2 className="text-lg sm:text-xl font-semibold text-white">Apply Coupon</h2>
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-2">Phone Number *</label>
-                    <input
-                      type="tel"
-                      value={shippingAddress.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.phone ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="10-digit mobile number"
-                      maxLength={10}
-                    />
-                    {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-2">Address Line 1 *</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.addressLine1}
-                      onChange={(e) => handleInputChange('addressLine1', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.addressLine1 ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="House no., Building name"
-                    />
-                    {errors.addressLine1 && <p className="text-red-500 text-sm mt-1">{errors.addressLine1}</p>}
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-2">Address Line 2</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.addressLine2}
-                      onChange={(e) => handleInputChange('addressLine2', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Road name, Area, Colony (Optional)"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">City *</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.city ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="City"
-                    />
-                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">State *</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.state ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="State"
-                    />
-                    {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Pincode *</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.pincode}
-                      onChange={(e) => handleInputChange('pincode', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.pincode ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="6-digit pincode"
-                      maxLength={6}
-                    />
-                    {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Country</label>
-                    <input
-                      type="text"
-                      value={shippingAddress.country}
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
-                    />
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => setShowCouponHint(!showCouponHint)}
+                    className="text-yellow-200 hover:text-yellow-100 transition-colors"
+                  >
+                    <Info className="w-5 h-5" />
+                  </motion.button>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  <AnimatePresence>
+                    {showCouponHint && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg overflow-hidden"
+                      >
+                        <p className="text-xs sm:text-sm font-semibold text-blue-900 mb-2">Available Coupons:</p>
+                        <div className="space-y-2">
+                          {isFirstOrder && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-base sm:text-lg">🎉</span>
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium text-blue-800">FIRST10</p>
+                                <p className="text-xs text-blue-600">Get 10% OFF on your first order</p>
+                              </div>
+                            </div>
+                          )}
+                          {calculateSubtotal() > 2000 && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-base sm:text-lg">🛒</span>
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium text-blue-800">BIG15</p>
+                                <p className="text-xs text-blue-600">Get 15% OFF on orders above ₹2000</p>
+                              </div>
+                            </div>
+                          )}
+                          {!isFirstOrder && calculateSubtotal() <= 2000 && (
+                            <p className="text-xs text-blue-600">Add ₹{(2001 - calculateSubtotal()).toFixed(2)} more to unlock BIG15 coupon!</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!couponApplied ? (
+                    <div>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value.toUpperCase());
+                            setCouponError('');
+                          }}
+                          placeholder="Enter coupon code (e.g., FIRST10)"
+                          className="flex-1 px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B1F1F] focus:border-transparent text-sm sm:text-base uppercase"
+                          disabled={couponLoading}
+                        />
+                        <motion.button
+                          type="button"
+                          onClick={applyCoupon}
+                          disabled={couponLoading || !couponCode.trim()}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full sm:w-auto px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-md text-sm sm:text-base"
+                        >
+                          {couponLoading ? (
+                            <span className="flex items-center gap-2 justify-center">
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                              />
+                              Applying...
+                            </span>
+                          ) : (
+                            'Apply'
+                          )}
+                        </motion.button>
+                      </div>
+
+                      <AnimatePresence>
+                        {couponError && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs sm:text-sm mt-2 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {couponError}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg gap-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-sm sm:text-base text-green-900 flex items-center gap-2">
+                            <span>{getDiscountBadge()?.icon}</span>
+                            {getDiscountBadge()?.text}
+                          </p>
+                          <p className="text-xs sm:text-sm text-green-700 mt-0.5">{getDiscountBadge()?.subtitle}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-green-800 mt-1">
+                            You saved ₹{couponDiscount.toFixed(2)}!
+                          </p>
+                        </div>
+                      </div>
+                      <motion.button
+                        type="button"
+                        onClick={removeCoupon}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors font-medium text-xs sm:text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Remove
+                      </motion.button>
+                    </motion.div>
+                  )}
+
+                  {/* Quick Apply Buttons */}
+                  {!couponApplied && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {isFirstOrder && (
+                        <motion.button
+                          type="button"
+                          onClick={() => {
+                            setCouponCode('FIRST10');
+                            setTimeout(applyCoupon, 100);
+                          }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium hover:bg-yellow-200 transition-colors"
+                        >
+                          🎉 Apply FIRST10
+                        </motion.button>
+                      )}
+                      {calculateSubtotal() > 2000 && (
+                        <motion.button
+                          type="button"
+                          onClick={() => {
+                            setCouponCode('BIG15');
+                            setTimeout(applyCoupon, 100);
+                          }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                        >
+                          🛒 Apply BIG15
+                        </motion.button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* SHIPPING ADDRESS */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+              >
+                <div className="bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
+                  <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">Delivery Address</h2>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Full Name */}
+                    <div className="sm:col-span-2">
+                      <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="fullName"
+                        type="text"
+                        value={shippingAddress.fullName}
+                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.fullName
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-[#8B1F1F] focus:border-transparent'
+                          }`}
+                        placeholder="Enter your full name"
+                      />
+                      <AnimatePresence>
+                        {errors.fullName && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs mt-1 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {errors.fullName}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Phone */}
+                    <div className="sm:col-span-2">
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="phone"
+                        type="tel"
+                        value={shippingAddress.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, ''))}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.phone
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-[#8B1F1F] focus:border-transparent'
+                          }`}
+                        placeholder="10-digit mobile number"
+                        maxLength={10}
+                      />
+                      <AnimatePresence>
+                        {errors.phone && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs mt-1 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {errors.phone}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Address Line 1 */}
+                    <div className="sm:col-span-2">
+                      <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Address Line 1 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="addressLine1"
+                        type="text"
+                        value={shippingAddress.addressLine1}
+                        onChange={(e) => handleInputChange('addressLine1', e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.addressLine1
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-[#8B1F1F] focus:border-transparent'
+                          }`}
+                        placeholder="House no., Building name, Street"
+                      />
+                      <AnimatePresence>
+                        {errors.addressLine1 && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs mt-1 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {errors.addressLine1}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Address Line 2 */}
+                    <div className="sm:col-span-2">
+                      <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Address Line 2 <span className="text-gray-400 text-xs">(Optional)</span>
+                      </label>
+                      <input
+                        id="addressLine2"
+                        type="text"
+                        value={shippingAddress.addressLine2}
+                        onChange={(e) => handleInputChange('addressLine2', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B1F1F] focus:border-transparent transition-all"
+                        placeholder="Landmark, Area (Optional)"
+                      />
+                    </div>
+
+                    {/* City */}
+                    <div>
+                      <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="city"
+                        type="text"
+                        value={shippingAddress.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.city
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-[#8B1F1F] focus:border-transparent'
+                          }`}
+                        placeholder="City"
+                      />
+                      <AnimatePresence>
+                        {errors.city && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs mt-1 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {errors.city}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* State */}
+                    <div>
+                      <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        State <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="state"
+                        type="text"
+                        value={shippingAddress.state}
+                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.state
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-[#8B1F1F] focus:border-transparent'
+                          }`}
+                        placeholder="State"
+                      />
+                      <AnimatePresence>
+                        {errors.state && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs mt-1 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {errors.state}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Pincode */}
+                    <div>
+                      <label htmlFor="pincode" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Pincode <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="pincode"
+                        type="text"
+                        value={shippingAddress.pincode}
+                        onChange={(e) => handleInputChange('pincode', e.target.value.replace(/\D/g, ''))}
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.pincode
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-[#8B1F1F] focus:border-transparent'
+                          }`}
+                        placeholder="6-digit pincode"
+                        maxLength={6}
+                      />
+                      <AnimatePresence>
+                        {errors.pincode && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-red-600 text-xs mt-1 flex items-center gap-1"
+                          >
+                            <span>⚠️</span> {errors.pincode}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Country */}
+                    <div>
+                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Country
+                      </label>
+                      <input
+                        id="country"
+                        type="text"
+                        value={shippingAddress.country}
+                        disabled
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Payment Method Section */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+              </motion.div>
+
+              {/* PAYMENT METHOD */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+              >
+                <div className="bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">Payment Method</h2>
+                </div>
+
+                <div className="p-4 sm:p-6 space-y-3">
+                  <motion.label
+                    whileHover={{ scale: 1.01 }}
+                    className={`flex items-start sm:items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'cod'
+                        ? 'border-[#8B1F1F] bg-red-50'
+                        : 'border-gray-300 hover:border-gray-400 bg-white'
+                      }`}
+                  >
                     <input
                       type="radio"
                       name="payment"
                       value="cod"
                       checked={paymentMethod === 'cod'}
                       onChange={(e) => setPaymentMethod(e.target.value as 'cod')}
-                      className="w-4 h-4 text-blue-600"
+                      className="w-5 h-5 text-[#8B1F1F] mt-0.5 sm:mt-0"
                     />
-                    <span className="font-medium">Cash on Delivery (COD)</span>
-                  </label>
-                  
-                  <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <div className="flex-1">
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">Cash on Delivery (COD)</span>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Pay when you receive your order</p>
+                    </div>
+                  </motion.label>
+
+                  <motion.label
+                    whileHover={{ scale: 1.01 }}
+                    className={`flex items-start sm:items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'online'
+                        ? 'border-[#8B1F1F] bg-red-50'
+                        : 'border-gray-300 hover:border-gray-400 bg-white'
+                      }`}
+                  >
                     <input
                       type="radio"
                       name="payment"
                       value="online"
                       checked={paymentMethod === 'online'}
                       onChange={(e) => setPaymentMethod(e.target.value as 'online')}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <span className="font-medium">Online (Card/UPI/Netbanking)</span>
-                  </label>
-                </div>
-              </div>
-              
-              <button
-                type="submit"
-                disabled={submitting || !razorpayLoaded}
-                className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-              >
-                {submitting 
-                  ? 'Processing...' 
-                  : paymentMethod === 'cod' 
-                    ? 'Place COD Order' 
-                    : 'Pay Online'
-                }
-              </button>
-            </form>
-          </div>
-          
-          {/* Order Summary - UPDATED */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-lg shadow-md sticky top-4">
-              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              <div className="space-y-4 mb-4">
-                {products.map((product, index) => (
-                  <div key={index} className="flex gap-3 pb-3 border-b">
-                    <img 
-                      src={product.image} 
-                      alt={product.title}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-5 h-5 text-[#8B1F1F] mt-0.5 sm:mt-0"
                     />
                     <div className="flex-1">
-                      <p className="font-medium text-sm">{product.title}</p>
-                      <p className="text-sm text-gray-600">Qty: {product.quantity}</p>
-                      <p className="text-sm font-semibold">₹{product.price}</p>
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">Online Payment</span>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Pay securely via Card/UPI/Netbanking</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>₹{products.reduce((total, product) => total + (parseFloat(product.price) * product.quantity), 0).toFixed(2)}</span>
+                  </motion.label>
                 </div>
-                
-                {couponApplied && couponDiscount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600 font-medium">
-                    <span>Discount Applied:</span>
-                    <span>-₹{couponDiscount.toFixed(2)}</span>
-                  </div>
+              </motion.div>
+
+              {/* SUBMIT BUTTON */}
+              <motion.button
+                type="submit"
+                disabled={submitting || !razorpayLoaded}
+                whileHover={{ scale: submitting ? 1 : 1.02 }}
+                whileTap={{ scale: submitting ? 1 : 0.98 }}
+                className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white font-bold text-base sm:text-lg rounded-xl hover:from-[#6B1515] hover:to-[#8B1F1F] disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+              >
+                {submitting ? (
+                  <span className="flex items-center gap-2 justify-center">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-5 h-5 border-3 border-white border-t-transparent rounded-full"
+                    />
+                    Processing Order...
+                  </span>
+                ) : (
+                  paymentMethod === 'cod'
+                    ? `Place Order - ₹${calculateTotal().toFixed(2)}`
+                    : `Pay ₹${calculateTotal().toFixed(2)} Online`
                 )}
-                
-                <div className="flex justify-between text-sm">
-                  <span>Shipping</span>
-                  <span className="text-green-600">FREE</span>
+              </motion.button>
+            </form>
+          </div>
+
+          {/* RIGHT COLUMN - Order Summary */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="lg:col-span-1"
+          >
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 sticky top-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
+                <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                <h2 className="text-lg sm:text-xl font-semibold text-white">Order Summary</h2>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                {/* Product List */}
+                <div className="space-y-3 sm:space-y-4 mb-4 max-h-64 overflow-y-auto">
+                  {products.map((product, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex gap-3 pb-3 border-b border-gray-200 last:border-0"
+                    >
+                      <img
+                        src={product.image}
+                        alt={product.title}
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg shadow-sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900 truncate">{product.title}</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Quantity: {product.quantity}</p>
+                        <p className="text-sm sm:text-base font-bold text-[#8B1F1F] mt-1">₹{(parseFloat(product.price) * product.quantity).toFixed(2)}</p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-                
-                <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                  <span>Total</span>
-                  <span>₹{calculateTotal().toFixed(2)}</span>
+
+                {/* Price Breakdown */}
+                <div className="space-y-2.5 pt-4 border-t-2 border-gray-200">
+                  <div className="flex justify-between text-sm sm:text-base text-gray-700">
+                    <span>Subtotal ({products.length} {products.length === 1 ? 'item' : 'items'})</span>
+                    <span className="font-semibold">₹{calculateSubtotal().toFixed(2)}</span>
+                  </div>
+
+                  {couponApplied && couponDiscount > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex justify-between text-sm sm:text-base text-green-600 font-semibold bg-green-50 px-3 py-2 rounded-lg"
+                    >
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-4 h-4" />
+                        Coupon Discount
+                      </span>
+                      <span>-₹{couponDiscount.toFixed(2)}</span>
+                    </motion.div>
+                  )}
+
+                  <div className="flex justify-between text-sm sm:text-base text-gray-700">
+                    <span>Delivery Charges</span>
+                    <span className="text-green-600 font-semibold">FREE</span>
+                  </div>
+
+                  <div className="flex justify-between text-lg sm:text-xl font-bold text-gray-900 pt-3 border-t-2 border-gray-200">
+                    <span>Total Amount</span>
+                    <span className="text-[#8B1F1F]">₹{calculateTotal().toFixed(2)}</span>
+                  </div>
+
+                  {couponApplied && couponDiscount > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3"
+                    >
+                      <p className="text-xs sm:text-sm text-yellow-800 font-semibold flex items-center gap-1">
+                        <span>🎉</span> You're saving ₹{couponDiscount.toFixed(2)} on this order!
+                      </p>
+                    </motion.div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
-
   );
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading checkout...</div>}>
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-[#8B1F1F] border-t-transparent rounded-full"
+        />
+      </div>
+    }>
       <CheckoutContent />
     </Suspense>
   );

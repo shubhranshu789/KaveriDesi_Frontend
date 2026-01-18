@@ -2,7 +2,10 @@ import React from 'react'
 import Link from 'next/link';
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 
-// import "../../../public/Images/logo.png"
+// import "../../FooterCompo/AboutUs"
+// import "../../FAQ"
+// import "../../Privacy"
+// import "../../Shipping"
 
 function Footer() {
   return (
@@ -24,7 +27,7 @@ function Footer() {
               </div>
             </div>
             <p className="text-amber-100 text-sm leading-relaxed">
-              Pure, fresh milk delivered to your doorstep. Experience authentic dairy excellence.
+              Pure, traditionally prepared ghee, achar, and jaggery. Experience authentic taste rooted in heritage.
             </p>
           </div>
 
@@ -33,9 +36,8 @@ function Footer() {
             <h4 className="text-lg font-bold text-amber-100 mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li><Link href="/" className="text-amber-50 hover:text-amber-200 transition">Home</Link></li>
-              <li><Link href="/products" className="text-amber-50 hover:text-amber-200 transition">Products</Link></li>
-              <li><Link href="/about" className="text-amber-50 hover:text-amber-200 transition">About Us</Link></li>
-              <li><Link href="/contact" className="text-amber-50 hover:text-amber-200 transition">Contact</Link></li>
+              <li><Link href="/FooterCompo/AboutUs" className="text-amber-50 hover:text-amber-200 transition">About Us</Link></li>
+              <li><Link href="/FooterCompo/FAQ" className="text-amber-50 hover:text-amber-200 transition">FAQ</Link></li>
             </ul>
           </div>
 
@@ -43,10 +45,18 @@ function Footer() {
           <div>
             <h4 className="text-lg font-bold text-amber-100 mb-4">Help & Support</h4>
             <ul className="space-y-2">
-              <li><Link href="/faq" className="text-amber-50 hover:text-amber-200 transition">FAQ</Link></li>
-              <li><Link href="/shipping" className="text-amber-50 hover:text-amber-200 transition">Shipping Info</Link></li>
-              <li><Link href="/returns" className="text-amber-50 hover:text-amber-200 transition">Returns</Link></li>
-              <li><Link href="/privacy" className="text-amber-50 hover:text-amber-200 transition">Privacy Policy</Link></li>
+              <li><Link href="/FooterCompo/Shipping" className="text-amber-50 hover:text-amber-200 transition">Shipping & Returns</Link></li>
+              <li><Link href="/FooterCompo/Privacy" className="text-amber-50 hover:text-amber-200 transition">Privacy Policy</Link></li>
+              <li>
+                <a 
+                  href="https://wa.me/919289148411" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-amber-50 hover:text-amber-200 transition"
+                >
+                  WhatsApp Support
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -55,69 +65,115 @@ function Footer() {
             <h4 className="text-lg font-bold text-amber-100 mb-4">Contact Us</h4>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-amber-200 mt-1" />
+                <Phone className="w-5 h-5 text-amber-200 mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-amber-50">+91 9876543210</p>
+                  <a href="tel:+919289148411" className="text-amber-50 hover:text-amber-200 transition">
+                    +91 92891 48411
+                  </a>
                   <p className="text-amber-200 text-sm">Available 24/7</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-amber-200 mt-1" />
-                <p className="text-amber-50">support@kaveridesi.com</p>
+                <Mail className="w-5 h-5 text-amber-200 mt-1 flex-shrink-0" />
+                <a 
+                  href="mailto:support@kaaveridesi.com" 
+                  className="text-amber-50 hover:text-amber-200 transition break-all"
+                >
+                  support@kaaveridesi.com
+                </a>
               </div>
               <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-amber-200 mt-1" />
+                <MapPin className="w-5 h-5 text-amber-200 mt-1 flex-shrink-0" />
                 <p className="text-amber-50">Delhi NCR, India</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Middle Section - Newsletter */}
-        {/* <div className="bg-red-800 bg-opacity-50 rounded-lg p-6 mb-12">
-          <div className="max-w-md">
-            <h4 className="text-lg font-bold text-amber-100 mb-2">Subscribe to Updates</h4>
-            <p className="text-amber-50 text-sm mb-4">Get fresh milk delivery updates and exclusive offers</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 rounded-lg text-gray-900 focus:outline-none"
-              />
-              <button className="bg-amber-200 hover:bg-amber-300 text-red-900 font-bold px-6 py-2 rounded-lg transition">
-                Subscribe
-              </button>
-            </div>
-          </div>
-        </div> */}
 
         {/* Social Media & Divider */}
         <div className="border-t border-red-700 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Social Icons */}
-            <div className="flex gap-4 mb-6 md:mb-0">
-              <a href="#" className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition">
+            <div className="flex gap-4">
+              <a 
+                href="https://facebook.com/kaaveridesi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition"
+                aria-label="Facebook"
+              >
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition">
+              <a 
+                href="https://twitter.com/kaaveridesi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition"
+                aria-label="Twitter"
+              >
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition">
+              <a 
+                href="https://instagram.com/kaaveridesi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition"
+                aria-label="Instagram"
+              >
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition">
+              <a 
+                href="https://linkedin.com/company/kaaveridesi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-red-800 hover:bg-amber-200 hover:text-red-900 text-amber-50 p-3 rounded-full transition"
+                aria-label="LinkedIn"
+              >
                 <Linkedin className="w-5 h-5" />
               </a>
             </div>
 
             {/* Copyright & Legal */}
             <div className="text-center md:text-right">
-              <p className="text-amber-200 text-sm">
-                © 2025 Kaveri Desi. All rights reserved.
+              <p className="text-amber-200 text-sm mb-2">
+                © 2026 Kaveri Desi. All rights reserved.
               </p>
-              <p className="text-amber-300 text-xs mt-2">
-                Terms of Service • Privacy Policy • Cookie Policy
-              </p>
+              <div className="flex flex-wrap justify-center md:justify-end gap-2 text-amber-300 text-xs">
+                <Link href="/shipping" className="hover:text-amber-100 transition">
+                  Shipping & Returns
+                </Link>
+                <span>•</span>
+                <Link href="/privacy" className="hover:text-amber-100 transition">
+                  Privacy Policy
+                </Link>
+                <span>•</span>
+                <Link href="/faq" className="hover:text-amber-100 transition">
+                  FAQ
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="mt-8 pt-8 border-t border-red-700">
+          <div className="flex flex-wrap justify-center gap-6 text-amber-200 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-100">✓</span>
+              <span>100% Authentic Products</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-100">✓</span>
+              <span>Traditional Methods</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-100">✓</span>
+              <span>Secure Payments</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-100">✓</span>
+              <span>Pan India Delivery</span>
             </div>
           </div>
         </div>

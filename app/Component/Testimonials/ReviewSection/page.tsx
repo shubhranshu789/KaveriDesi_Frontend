@@ -1,9 +1,22 @@
-// Component/ReviewSection.tsx
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Star, 
+  Send, 
+  User, 
+  Mail, 
+  MessageSquare, 
+  ThumbsUp,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  TrendingUp,
+  Award,
+  CheckCircle2
+} from 'lucide-react';
 
 interface Review {
   _id: string;
@@ -44,6 +57,8 @@ function ReviewSection() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(0);
   
   const [formData, setFormData] = useState({
     userName: '',
@@ -51,6 +66,20 @@ function ReviewSection() {
     rating: 5,
     comment: ''
   });
+
+  // Calculate average rating
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : '0.0';
+
+  // Rating distribution
+  const getRatingDistribution = () => {
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(review => {
+      distribution[review.rating as keyof typeof distribution]++;
+    });
+    return distribution;
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -134,12 +163,12 @@ function ReviewSection() {
       const data = await response.json();
       
       if (data.success) {
-        // alert('Review submitted successfully!');
         setFormData(prev => ({
           ...prev,
           rating: 5,
           comment: ''
         }));
+        setShowForm(false);
         fetchReviews(1);
       } else {
         alert(data.message || 'Failed to submit review');
@@ -152,30 +181,58 @@ function ReviewSection() {
     }
   };
 
-  const handleLoginRedirect = () => {
-    alert('Please login first');
-    router.push('/');
-  };
-
   const goToPage = (page: number) => {
     if (page >= 1 && page <= pagination.totalPages) {
       fetchReviews(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: document.getElementById('reviews-section')?.offsetTop || 0, behavior: 'smooth' });
     }
   };
 
-  const renderStars = (rating: number, interactive = false) => {
+  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
+    const sizeClasses = {
+      sm: 'w-4 h-4',
+      md: 'w-5 h-5',
+      lg: 'w-6 h-6'
+    };
+    
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <motion.span
+          <Star
             key={star}
-            whileHover={interactive ? { scale: 1.2 } : {}}
-            whileTap={interactive ? { scale: 0.9 } : {}}
-            className={`text-2xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+            className={`${sizeClasses[size]} ${
+              star <= rating 
+                ? 'fill-yellow-400 text-yellow-400' 
+                : 'fill-gray-200 text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const renderInteractiveStars = () => {
+    return (
+      <div className="flex gap-1 sm:gap-2">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <motion.button
+            key={star}
+            type="button"
+            onClick={() => setFormData({ ...formData, rating: star })}
+            onMouseEnter={() => setHoveredStar(star)}
+            onMouseLeave={() => setHoveredStar(0)}
+            whileHover={{ scale: 1.2, rotate: 10 }}
+            whileTap={{ scale: 0.9 }}
+            className="focus:outline-none"
           >
-            ★
-          </motion.span>
+            <Star
+              className={`w-8 h-8 sm:w-10 sm:h-10 transition-all ${
+                star <= (hoveredStar || formData.rating)
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'fill-gray-200 text-gray-300'
+              }`}
+            />
+          </motion.button>
         ))}
       </div>
     );
@@ -183,7 +240,8 @@ function ReviewSection() {
 
   const renderPaginationButtons = () => {
     const buttons = [];
-    const maxButtons = 5;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const maxButtons = isMobile ? 3 : 5;
     
     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
     let endPage = Math.min(pagination.totalPages, startPage + maxButtons - 1);
@@ -199,26 +257,27 @@ function ReviewSection() {
         disabled={!pagination.hasPrevPage}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+        className="p-2 sm:px-4 sm:py-2 rounded-lg bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center gap-1 text-sm"
       >
-        Previous
+        <ChevronLeft className="w-4 h-4" />
+        <span className="hidden sm:inline">Prev</span>
       </motion.button>
     );
     
-    if (startPage > 1) {
+    if (startPage > 1 && !isMobile) {
       buttons.push(
         <motion.button
           key={1}
           onClick={() => goToPage(1)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="px-4 py-2 rounded-lg bg-white border-2 border-purple-300 text-purple-700 font-semibold hover:bg-purple-50 shadow-md"
+          className="px-3 py-2 sm:px-4 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 shadow-md text-sm"
         >
           1
         </motion.button>
       );
       if (startPage > 2) {
-        buttons.push(<span key="dots1" className="px-2 text-gray-500">...</span>);
+        buttons.push(<span key="dots1" className="px-1 text-gray-400">...</span>);
       }
     }
     
@@ -229,10 +288,10 @@ function ReviewSection() {
           onClick={() => goToPage(i)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className={`px-4 py-2 rounded-lg font-semibold shadow-md ${
+          className={`px-3 py-2 sm:px-4 rounded-lg font-semibold shadow-md text-sm ${
             currentPage === i
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-              : 'bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50'
+              ? 'bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white'
+              : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
           }`}
         >
           {i}
@@ -240,9 +299,9 @@ function ReviewSection() {
       );
     }
     
-    if (endPage < pagination.totalPages) {
+    if (endPage < pagination.totalPages && !isMobile) {
       if (endPage < pagination.totalPages - 1) {
-        buttons.push(<span key="dots2" className="px-2 text-gray-500">...</span>);
+        buttons.push(<span key="dots2" className="px-1 text-gray-400">...</span>);
       }
       buttons.push(
         <motion.button
@@ -250,7 +309,7 @@ function ReviewSection() {
           onClick={() => goToPage(pagination.totalPages)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="px-4 py-2 rounded-lg bg-white border-2 border-purple-300 text-purple-700 font-semibold hover:bg-purple-50 shadow-md"
+          className="px-3 py-2 sm:px-4 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 shadow-md text-sm"
         >
           {pagination.totalPages}
         </motion.button>
@@ -264,178 +323,257 @@ function ReviewSection() {
         disabled={!pagination.hasNextPage}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+        className="p-2 sm:px-4 sm:py-2 rounded-lg bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center gap-1 text-sm"
       >
-        Next
+        <span className="hidden sm:inline">Next</span>
+        <ChevronRight className="w-4 h-4" />
       </motion.button>
     );
     
     return buttons;
   };
 
+  const distribution = getRatingDistribution();
+
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      {/* Review Submission Form */}
+    <div id="reviews-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      
+      {/* Statistics Overview */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative  rounded-2xl shadow-2xl p-8 mb-8 overflow-hidden"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12"
       >
-        {/* Decorative gradient background */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl -z-10"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-400/20 to-purple-400/20 rounded-full blur-3xl -z-10"></div>
-        
-        <motion.h2 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-4xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent"
+        {/* Average Rating Card */}
+        <motion.div
+          whileHover={{ scale: 1.02, y: -5 }}
+          className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-yellow-200"
         >
-          ✍️ Write a Review
-        </motion.h2>
+          <div className="flex items-center gap-3 sm:gap-4 mb-3">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-yellow-400 rounded-full flex items-center justify-center">
+              <Star className="w-6 h-6 sm:w-8 sm:h-8 fill-white text-white" />
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900">{averageRating}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Average Rating</div>
+            </div>
+          </div>
+          {renderStars(Math.round(parseFloat(averageRating)), 'md')}
+        </motion.div>
+
+        {/* Total Reviews Card */}
+        <motion.div
+          whileHover={{ scale: 1.02, y: -5 }}
+          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-blue-200"
+        >
+          <div className="flex items-center gap-3 sm:gap-4 mb-3">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500 rounded-full flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900">{pagination.totalReviews}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Total Reviews</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-600 font-medium">
+            <TrendingUp className="w-4 h-4" />
+            Verified purchases only
+          </div>
+        </motion.div>
+
+        {/* Customer Satisfaction */}
+    
+
+
+
+      </motion.div>
+
+      {/* Write Review Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 mb-8 sm:mb-12 border border-gray-200"
+      >
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-[#8B1F1F]" />
+            Share Your Experience
+          </h2>
+          {isLoggedIn && !showForm && (
+            <motion.button
+              onClick={() => setShowForm(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white rounded-xl font-semibold shadow-lg flex items-center gap-2 text-sm sm:text-base"
+            >
+              <Send className="w-4 h-4" />
+              Write Review
+            </motion.button>
+          )}
+        </div>
         
         <AnimatePresence mode="wait">
           {!isLoggedIn ? (
             <motion.div
               key="login-prompt"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center py-12 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-purple-200"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="text-center py-8 sm:py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300"
             >
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 2 }}
-                className="text-6xl mb-4"
+                className="text-4xl sm:text-6xl mb-4"
               >
                 🔒
               </motion.div>
-              <p className="text-gray-700 text-lg mb-6 font-medium">You need to be logged in to write a review</p>
+              <p className="text-gray-700 text-base sm:text-lg mb-4 sm:mb-6 font-medium px-4">
+                Sign in to share your thoughts about this product
+              </p>
               <motion.button
-                onClick={handleLoginRedirect}
+                onClick={() => router.push('/Component/Auth/SignIn')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                className="bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white px-6 py-3 sm:px-8 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm sm:text-base"
               >
                 Login to Review
               </motion.button>
             </motion.div>
-          ) : (
+          ) : showForm ? (
             <motion.form
               key="review-form"
               onSubmit={handleSubmit}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-6"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-4 sm:space-y-6"
             >
-              <div className="grid md:grid-cols-2 gap-6">
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <label className="block text-sm font-bold mb-2 text-gray-700">Your Name</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Your Name
+                  </label>
                   <input
                     type="text"
                     value={formData.userName}
                     readOnly
-                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl bg-white/50 backdrop-blur-sm cursor-not-allowed font-medium"
+                    className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed font-medium text-sm sm:text-base"
                   />
-                  <p className="text-xs text-purple-600 mt-2 font-medium">✓ Verified from your account</p>
-                </motion.div>
+                  <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Verified from your account
+                  </p>
+                </div>
                 
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <label className="block text-sm font-bold mb-2 text-gray-700">Your Email</label>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700 flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Your Email
+                  </label>
                   <input
                     type="email"
                     value={formData.userEmail}
                     readOnly
-                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl bg-white/50 backdrop-blur-sm cursor-not-allowed font-medium"
+                    className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed font-medium text-sm sm:text-base"
                   />
-                  <p className="text-xs text-purple-600 mt-2 font-medium">✓ Verified from your account</p>
-                </motion.div>
+                  <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Verified from your account
+                  </p>
+                </div>
               </div>
               
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <label className="block text-sm font-bold mb-3 text-gray-700">Rating</label>
-                <div className="flex gap-2">
-                  {[5, 4, 3, 2, 1].map((rating) => (
-                    <motion.button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, rating })}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className={`px-6 py-3 rounded-xl font-bold text-lg transition-all ${
-                        formData.rating === rating
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg'
-                          : 'bg-white border-2 border-gray-300 text-gray-600 hover:border-yellow-400'
-                      }`}
-                    >
-                      {rating} ★
-                    </motion.button>
-                  ))}
+              <div>
+                <label className="block text-sm font-semibold mb-3 text-gray-700">
+                  Rate this product
+                </label>
+                <div className="flex items-center gap-4">
+                  {renderInteractiveStars()}
+                  <span className="text-lg sm:text-xl font-bold text-gray-900">
+                    {formData.rating} {formData.rating === 1 ? 'Star' : 'Stars'}
+                  </span>
                 </div>
-              </motion.div>
+              </div>
               
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="block text-sm font-bold mb-2 text-gray-700">Your Review</label>
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Your Review
+                </label>
                 <textarea
                   value={formData.comment}
                   onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
                   required
                   maxLength={500}
                   rows={5}
-                  className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-4 focus:ring-purple-300 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm resize-none"
-                  placeholder="Share your experience with this product... ✨"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-[#8B1F1F]/20 focus:border-[#8B1F1F] transition-all resize-none text-sm sm:text-base"
+                  placeholder="Tell us about your experience with this product... ✨"
                 />
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-2">
                   <p className="text-sm text-gray-600 font-medium">
                     {formData.comment.length}/500 characters
                   </p>
-                  <div className={`h-2 w-32 bg-gray-200 rounded-full overflow-hidden`}>
+                  <div className="w-full sm:w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(formData.comment.length / 500) * 100}%` }}
-                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                      className={`h-full ${
+                        formData.comment.length < 50 
+                          ? 'bg-red-500' 
+                          : formData.comment.length < 100 
+                          ? 'bg-yellow-500' 
+                          : 'bg-green-500'
+                      }`}
                     />
                   </div>
                 </div>
-              </motion.div>
+              </div>
               
-              <motion.button
-                type="submit"
-                disabled={submitting}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                      className="w-6 h-6 border-3 border-white border-t-transparent rounded-full mr-2"
-                    />
-                    Submitting...
-                  </span>
-                ) : (
-                  '🚀 Submit Review'
-                )}
-              </motion.button>
+              <div className="flex gap-3">
+                <motion.button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 sm:flex-none px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors text-sm sm:text-base"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  type="submit"
+                  disabled={submitting}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-1 bg-gradient-to-r from-[#8B1F1F] to-[#6B1515] text-white py-3 rounded-xl font-bold shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  {submitting ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                        className="w-5 h-5 border-3 border-white border-t-transparent rounded-full"
+                      />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Submit Review
+                    </>
+                  )}
+                </motion.button>
+              </div>
             </motion.form>
+          ) : (
+            <motion.div
+              key="write-prompt"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8 text-gray-600"
+            >
+              Click "Write Review" to share your experience
+            </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
@@ -444,21 +582,22 @@ function ReviewSection() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white rounded-2xl shadow-2xl p-8"
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-200"
       >
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            💬 Customer Reviews
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-[#8B1F1F]" />
+            Customer Reviews
           </h2>
-          <motion.span
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200 }}
-            className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-6 py-2 rounded-full font-bold text-lg"
+            className="bg-gradient-to-r from-[#8B1F1F]/10 to-[#6B1515]/10 text-[#8B1F1F] px-4 py-2 rounded-full font-bold text-sm sm:text-base"
           >
             {pagination.totalReviews} {pagination.totalReviews === 1 ? 'Review' : 'Reviews'}
-          </motion.span>
+          </motion.div>
         </div>
 
         <AnimatePresence mode="wait">
@@ -468,14 +607,14 @@ function ReviewSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center py-16"
+              className="text-center py-12 sm:py-16"
             >
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                className="inline-block w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full"
+                className="inline-block w-12 h-12 sm:w-16 sm:h-16 border-4 border-gray-200 border-t-[#8B1F1F] rounded-full"
               />
-              <p className="mt-4 text-gray-600 font-medium">Loading reviews...</p>
+              <p className="mt-4 text-gray-600 font-medium text-sm sm:text-base">Loading reviews...</p>
             </motion.div>
           ) : reviews.length === 0 ? (
             <motion.div
@@ -483,42 +622,46 @@ function ReviewSection() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center py-16 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl"
+              className="text-center py-12 sm:py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl"
             >
               <motion.div
                 animate={{ y: [0, -20, 0] }}
                 transition={{ repeat: Infinity, duration: 2 }}
-                className="text-8xl mb-4"
+                className="text-6xl sm:text-8xl mb-4"
               >
                 📝
               </motion.div>
-              <p className="text-2xl font-bold text-gray-700">No reviews yet</p>
-              <p className="mt-2 text-gray-600">Be the first to review this product!</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-700">No reviews yet</p>
+              <p className="mt-2 text-sm sm:text-base text-gray-600">Be the first to review this product!</p>
             </motion.div>
           ) : (
             <>
-              <motion.div className="space-y-6 mb-8">
+              <motion.div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
                 {reviews.map((review, index) => (
                   <motion.div
                     key={review._id}
                     initial={{ opacity: 0, x: -50 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    whileHover={{ scale: 1.02, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
-                    className="bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-xl p-6 border-l-4 border-purple-500 hover:border-pink-500 transition-all"
+                    whileHover={{ scale: 1.01, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
+                    className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6 border-l-4 border-[#8B1F1F] hover:border-[#6B1515] transition-all"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <motion.h3
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="font-bold text-xl text-gray-800 mb-2"
-                        >
-                          {review.userName}
-                        </motion.h3>
-                        {renderStars(review.rating)}
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#8B1F1F] to-[#6B1515] rounded-full flex items-center justify-center text-white font-bold">
+                            {review.userName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-base sm:text-lg text-gray-900">
+                              {review.userName}
+                            </h3>
+                            <p className="text-xs text-gray-500">{review.userEmail}</p>
+                          </div>
+                        </div>
+                        {renderStars(review.rating, 'sm')}
                       </div>
-                      <span className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full font-medium">
+                      <span className="text-xs sm:text-sm text-gray-500 bg-white px-3 py-1.5 rounded-full font-medium whitespace-nowrap">
                         {new Date(review.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
@@ -530,7 +673,7 @@ function ReviewSection() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
-                      className="text-gray-700 leading-relaxed text-lg"
+                      className="text-gray-700 leading-relaxed text-sm sm:text-base"
                     >
                       {review.comment}
                     </motion.p>
@@ -542,7 +685,7 @@ function ReviewSection() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex justify-center items-center gap-3 mt-8 flex-wrap"
+                  className="flex justify-center items-center gap-2 sm:gap-3 mt-6 sm:mt-8 flex-wrap"
                 >
                   {renderPaginationButtons()}
                 </motion.div>
@@ -551,7 +694,7 @@ function ReviewSection() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center text-sm text-gray-600 mt-6 font-medium"
+                className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6 font-medium"
               >
                 Page {currentPage} of {pagination.totalPages}
               </motion.p>
@@ -563,10 +706,17 @@ function ReviewSection() {
   );
 }
 
-
-export default function CheckoutPage() {
+export default function ReviewPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading checkout...</div>}>
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-[#8B1F1F] border-t-transparent rounded-full"
+        />
+      </div>
+    }>
       <ReviewSection />
     </Suspense>
   );
